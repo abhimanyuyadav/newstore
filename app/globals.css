@@ -1,0 +1,46 @@
+@import "tailwindcss";
+@layer base {
+  :root {
+    --bg: #ffffff; --text: #0d0d0d; --accent: #000000;
+    --accent-dark: #000000; --black: #000000; --muted: #6b7280;
+  }
+  body {
+    background-color: var(--bg); color: var(--text);
+    font-family: var(--font-dm-sans, "DM Sans", sans-serif);
+    -webkit-font-smoothing: antialiased;
+  }
+  h1,h2,h3,h4,h5,h6 { font-family: var(--font-playfair, "Playfair Display", serif); }
+  html { scroll-behavior: smooth; }
+}
+
+@layer utilities {
+  @keyframes fadeUp {
+    from {
+      opacity: 0;
+      transform: translateY(24px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes floatIn {
+    from {
+      opacity: 0;
+      transform: scale(0.98);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  .animate-fade-up {
+    animation: fadeUp 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  .animate-float-in {
+    animation: floatIn 0.9s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+}
