@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
 import { isAdminLoggedIn, adminLogout, getSiteSettings, saveAllAdminData } from "@/lib/data";
+import { postProducts, postOrders, postUsers } from "@/utils/api/admin";
 import { LayoutDashboard, Package, ShoppingBag, Users, BarChart3, Tag, Star, LogOut, Menu, X, Settings, LayoutGrid, Save } from "lucide-react";
 
 const nav = [
@@ -23,6 +24,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const [ready, setReady] = useState(false);
   const [open, setOpen] = useState(false);
   const siteSettings = getSiteSettings();
+  const [savingAll, setSavingAll] = useState(false);
+  const [messages, setMessages] = useState<Array<{id:number; entity:string; status:"success"|"error"; text:string}>>([]);
 
   useEffect(() => {
     if (!isAdminLoggedIn()) {
@@ -67,9 +70,77 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           </button>
           <h1 className="font-semibold text-sm uppercase tracking-[0.2em] text-white/70">{nav.find(n => n.href === pathname)?.label || "Admin"}</h1>
           <div className="ml-auto flex items-center gap-3">
-            <button onClick={saveAllAdminData} className="inline-flex items-center gap-2 rounded-full bg-red-500 px-4 py-2 text-xs font-semibold text-white hover:bg-red-400 transition">
-              <Save className="w-4 h-4" /> Save All
-            </button>
+            <div className="relative">
+              <button onClick={async () => {
+                  setSavingAll(true);
+                  setMessages([]);
+                  const results: Array<{id:number; entity:string; status:"success"|"error"; text:string}> = [];
+                  try {
+                    // save locally first
+                    saveAllAdminData();
+
+                    // products
+                    try {
+                      const rawProducts = localStorage.getItem('19teen_products');
+                      const products = rawProducts ? JSON.parse(rawProducts) : [];
+                      if (products.length) {
+                        await postProducts(products);
+                        results.push({ id: results.length+1, entity: 'products', status: 'success', text: `Migrated ${products.length} products` });
+                      } else {
+                        results.push({ id: results.length+1, entity: 'products', status: 'success', text: 'No products to migrate' });
+                      }
+                    } catch (err:any) {
+                      results.push({ id: results.length+1, entity: 'products', status: 'error', text: err?.message || 'Products migration failed' });
+                    }
+
+                    // orders
+                    try {
+                      const rawOrders = localStorage.getItem('19teen_orders');
+                      const orders = rawOrders ? JSON.parse(rawOrders) : [];
+                      if (orders.length) {
+                        await postOrders(orders);
+                        results.push({ id: results.length+1, entity: 'orders', status: 'success', text: `Migrated ${orders.length} orders` });
+                      } else {
+                        results.push({ id: results.length+1, entity: 'orders', status: 'success', text: 'No orders to migrate' });
+                      }
+                    } catch (err:any) {
+                      results.push({ id: results.length+1, entity: 'orders', status: 'error', text: err?.message || 'Orders migration failed' });
+                    }
+
+                    // users
+                    try {
+                      const rawUsers = localStorage.getItem('9teen_user_accounts');
+                      const users = rawUsers ? JSON.parse(rawUsers) : [];
+                      if (users.length) {
+                        const payload = users.map((u:any) => ({ id: u.id, name: u.name, email: u.email, phone: u.phone, address: u.address, city: u.city }));
+                        await postUsers(payload);
+                        results.push({ id: results.length+1, entity: 'users', status: 'success', text: `Migrated ${users.length} users` });
+                      } else {
+                        results.push({ id: results.length+1, entity: 'users', status: 'success', text: 'No users to migrate' });
+                      }
+                    } catch (err:any) {
+                      results.push({ id: results.length+1, entity: 'users', status: 'error', text: err?.message || 'Users migration failed' });
+                    }
+
+                  } finally {
+                    setSavingAll(false);
+                    setMessages(results);
+                    // auto-dismiss
+                    setTimeout(() => setMessages([]), 6000);
+                  }
+                }} className="inline-flex items-center gap-2 rounded-full bg-red-500 px-4 py-2 text-xs font-semibold text-white hover:bg-red-400 transition">
+                <Save className="w-4 h-4" /> {savingAll ? 'Saving…' : 'Save All'}
+              </button>
+
+              {/* Toasts */}
+              <div className="absolute right-0 top-12 w-72 z-50">
+                {messages.map(m => (
+                  <div key={m.id} className={`mb-2 rounded-md p-2 text-xs font-medium ${m.status === 'success' ? 'bg-green-600/90 text-white' : 'bg-red-700/95 text-white'}`}>
+                    <div className="truncate"><strong className="uppercase">{m.entity}</strong>: {m.text}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
             <div className="text-xs text-white/50">View Store: <Link href="/" className="text-red-400 hover:text-red-300">Open</Link></div>
           </div>
         </header>

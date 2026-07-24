@@ -79,11 +79,15 @@ export default function HomePage() {
           </div>
           <Link href="/products" className="text-sm font-semibold text-black underline-offset-4 hover:underline">View All</Link>
         </div>
-        <div className="grid grid-cols-3 sm:grid-cols-6 gap-4">
+            <div className="grid grid-cols-3 sm:grid-cols-6 gap-4">
           {loading ? skeletonCategoryCards : categories.map(cat => (
             <Link key={cat.id} href={`/products?cat=${cat.id}`} className="group flex flex-col items-center gap-2 rounded-3xl border border-gray-200 bg-white p-4 text-center transition hover:border-black">
-              <div className="relative flex h-20 w-20 items-center justify-center rounded-full border border-gray-200 bg-gray-100 text-2xl transition group-hover:border-black">
-                <span>{cat.emoji}</span>
+              <div className="relative flex h-20 w-20 items-center justify-center rounded-full border border-gray-200 bg-gray-100 overflow-hidden transition group-hover:border-black">
+                {cat.image ? (
+                  <img src={cat.image} alt={cat.name} className="object-cover w-full h-full" />
+                ) : (
+                  <div className="flex items-center justify-center w-full h-full text-2xl">{cat.emoji}</div>
+                )}
                 {!cat.enabled && <span className="absolute bottom-0 right-0 rounded-full bg-red-500 text-white text-[10px] px-2 py-1">Soon</span>}
               </div>
               <span className="text-xs font-semibold uppercase tracking-[0.2em] text-gray-600">{cat.name}</span>
@@ -201,6 +205,9 @@ export default function HomePage() {
       </section>
     ) : null,
   };
+
+  const orderedSectionKeys = (settings.sectionOrder?.length ? settings.sectionOrder : defaultSiteSettings.sectionOrder).filter((sectionKey) => sectionKey in sectionRenderers);
+
   return (
     <div className="min-h-screen bg-white text-black">
       <Navbar />
@@ -215,10 +222,13 @@ export default function HomePage() {
             <div className="grid grid-cols-1 lg:grid-cols-[1.1fr_0.9fr] gap-12 items-center">
               <div className="space-y-6 animate-fade-up">
                 <span className="text-xs font-semibold uppercase tracking-[0.4em] text-white/70">{settings.heroTopLabel}</span>
-                <h1 className="text-5xl md:text-6xl font-black leading-tight">{settings.heroTitle}<br />{settings.heroHighlight}</h1>
+                <h1 className="text-5xl md:text-6xl font-black leading-tight">
+                  {settings.heroTitle}
+                  {settings.heroHighlight ? <><br />{settings.heroHighlight}</> : null}
+                </h1>
                 <p className="max-w-xl text-white/80 text-base md:text-lg leading-relaxed">{settings.heroSubtitle}</p>
                 <div className="flex flex-wrap gap-3">
-                      <Link href="/products" className="inline-flex items-center justify-center rounded-full border border-white bg-white px-8 py-3 text-sm font-semibold text-black transition">{settings.heroButtonLabel}</Link>
+                  <Link href="/products" className="inline-flex items-center justify-center rounded-full border border-white bg-white px-8 py-3 text-sm font-semibold text-black transition">{settings.heroButtonLabel}</Link>
                   <Link href="/products" className="inline-flex items-center justify-center rounded-full border border-white/80 bg-white/10 px-8 py-3 text-sm font-semibold text-white transition">{settings.heroExploreButtonLabel}</Link>
                   <Link href="/admin" className="inline-flex items-center justify-center rounded-full border border-white/80 bg-white/10 px-6 py-3 text-sm font-semibold text-white transition">Admin Panel</Link>
                 </div>
@@ -231,7 +241,28 @@ export default function HomePage() {
           </div>
         </section>
 
-        {settings.sectionOrder.map(sectionKey => sectionRenderers[sectionKey] ?? null)}
+        <section className="py-12">
+          <div className="grid gap-5 lg:grid-cols-2">
+            <div className="group relative overflow-hidden rounded-[2rem] bg-black text-white p-10 flex flex-col justify-between">
+              <div className="space-y-4">
+                <span className="text-xs uppercase tracking-[0.4em] text-white/60">Summer Collection ’24</span>
+                <h2 className="text-4xl font-black">Light. Comfortable. Effortless.</h2>
+                <p className="max-w-xl text-sm text-white/70">New seasonal styles for bold streetwear looks. Shop the freshest drop while it lasts.</p>
+              </div>
+              <Link href="/products" className="mt-6 inline-flex items-center rounded-full bg-white px-6 py-3 text-sm font-semibold text-black">Explore Now</Link>
+            </div>
+            <div className="group relative overflow-hidden rounded-[2rem] bg-white border border-gray-200 p-10 flex flex-col justify-between">
+              <div className="space-y-4">
+                <span className="text-xs uppercase tracking-[0.4em] text-gray-400">Limited edition drop</span>
+                <h2 className="text-4xl font-black">Exclusive pieces. Limited stock.</h2>
+                <p className="max-w-xl text-sm text-gray-600">Shop select styles before they sell out. Premium looks engineered for next-level streetwear.</p>
+              </div>
+              <Link href="/products" className="mt-6 inline-flex items-center rounded-full border border-black px-6 py-3 text-sm font-semibold text-black">Shop Limited</Link>
+            </div>
+          </div>
+        </section>
+
+        {orderedSectionKeys.map(sectionKey => sectionRenderers[sectionKey] ?? null)}
 
         <section className="py-12">
           <div className="flex items-center justify-between mb-6">

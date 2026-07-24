@@ -2,6 +2,7 @@
 import { Product, Order, Category, SiteSettings, Coupon, Review, UserAccount } from "./types";
 
 const PRODUCT_STORAGE_KEY = "19teen_products";
+const CATEGORIES_STORAGE_KEY = "19teen_categories";
 const SITE_SETTINGS_KEY = "19teen_site_settings";
 const COUPON_STORAGE_KEY = "19teen_coupons";
 const REVIEW_STORAGE_KEY = "19teen_reviews";
@@ -10,10 +11,88 @@ const USER_ACCOUNTS_KEY = "9teen_user_accounts";
 const USER_SESSION_KEY = "9teen_user_session";
 export const DATA_CHANGED_EVENT = "19teen-data-changed";
 
+const SHARED_STORAGE_KEYS = [
+	PRODUCT_STORAGE_KEY,
+	CATEGORIES_STORAGE_KEY,
+	SITE_SETTINGS_KEY,
+	COUPON_STORAGE_KEY,
+	REVIEW_STORAGE_KEY,
+	WISHLIST_STORAGE_KEY,
+	USER_ACCOUNTS_KEY,
+	USER_SESSION_KEY,
+	"19teen_orders",
+	"19teen_last_order",
+	"19teen_cart",
+];
+
+let sharedHydrationPromise: Promise<void> | null = null;
+
 function notifyDataChanged() {
 	if (typeof window !== "undefined") {
 		window.dispatchEvent(new CustomEvent(DATA_CHANGED_EVENT));
+		void refreshFromSharedStorage();
 	}
+}
+
+async function refreshFromSharedStorage() {
+	if (typeof window === "undefined") return;
+	if (sharedHydrationPromise) return sharedHydrationPromise;
+
+	sharedHydrationPromise = (async () => {
+		for (const key of SHARED_STORAGE_KEYS) {
+			try {
+				const res = await fetch(`/api/storage?key=${encodeURIComponent(key)}`);
+				if (!res.ok) continue;
+				const value = await res.json();
+				if (value === null || value === undefined) continue;
+				localStorage.setItem(key, JSON.stringify(value));
+			} catch {}
+		}
+	})().finally(() => {
+		sharedHydrationPromise = null;
+	});
+
+	return sharedHydrationPromise;
+}
+
+async function writeSharedValue(key: string, value: unknown) {
+	if (typeof window === "undefined") {
+		try {
+			await fetch('/api/storage', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ key, value }),
+			});
+		} catch {}
+		return;
+	}
+
+	try {
+		await fetch('/api/storage', {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({ key, value }),
+		});
+	} catch {}
+}
+
+function getLocalValue<T>(key: string, fallback: T): T {
+	try {
+		const raw = localStorage.getItem(key);
+		return raw ? JSON.parse(raw) : fallback;
+	} catch {
+		return fallback;
+	}
+}
+
+function setLocalValue(key: string, value: unknown) {
+	try {
+		localStorage.setItem(key, JSON.stringify(value));
+	} catch {}
+}
+
+if (typeof window !== "undefined") {
+	void refreshFromSharedStorage();
 }
 
 export const defaultCoupons: Coupon[] = [
@@ -27,11 +106,11 @@ export const defaultReviews: Review[] = [
 ];
 
 export const categories: Category[] = [
-	{ id: "men", name: "Men", emoji: "👕", enabled: true, subcategories: ["Tops", "Jackets", "Shirts"] },
-	{ id: "dresses", name: "Dresses", emoji: "👗", enabled: true, subcategories: ["Casual", "Party", "Evening"] },
-	{ id: "footwear", name: "Footwear", emoji: "👟", enabled: true, subcategories: ["Sneakers", "Sandals", "Boots"] },
-	{ id: "accessories", name: "Accessories", emoji: "🧢", enabled: false, subcategories: ["Bags", "Jewelry", "Hats"] },
-	{ id: "cosmetics", name: "Cosmetics", emoji: "💄", enabled: false, subcategories: ["Makeup", "Skincare", "Fragrance"] },
+	{ id: "men", name: "Men", emoji: "👕", enabled: true, subcategories: ["Tops", "Jackets", "Shirts"], image: "https://images.unsplash.com/photo-1520975680306-5d7d6f4f4b4a?q=80&w=600&auto=format&fit=crop" },
+	{ id: "dresses", name: "Dresses", emoji: "👗", enabled: true, subcategories: ["Casual", "Party", "Evening"], image: "https://images.unsplash.com/photo-1512436991641-6745cdb1723f?q=80&w=600&auto=format&fit=crop" },
+	{ id: "footwear", name: "Footwear", emoji: "👟", enabled: true, subcategories: ["Sneakers", "Sandals", "Boots"], image: "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?q=80&w=600&auto=format&fit=crop" },
+	{ id: "accessories", name: "Accessories", emoji: "🧢", enabled: false, subcategories: ["Bags", "Jewelry", "Hats"], image: "https://images.unsplash.com/photo-1495121605193-b116b5b09f3b?q=80&w=600&auto=format&fit=crop" },
+	{ id: "cosmetics", name: "Cosmetics", emoji: "💄", enabled: false, subcategories: ["Makeup", "Skincare", "Fragrance"], image: "https://images.unsplash.com/photo-1541099649105-f69ad21f3246?q=80&w=600&auto=format&fit=crop" },
 ];
 
 export const defaultProducts: Product[] = [
@@ -45,13 +124,13 @@ export const defaultProducts: Product[] = [
 export const defaultSiteSettings: SiteSettings = {
 	siteName: "9TEEN",
 	tagline: "Wear your confidence",
-	heroTopLabel: "New collection 2025",
-	heroTitle: "Summer Vibes",
-	heroHighlight: "Unleashed",
-	heroSubtitle: "Discover the latest trends that define your style. Stay confident, stay 9TEEN.",
+	heroTopLabel: "Premium streetwear",
+	heroTitle: "Wear Your Story.",
+	heroHighlight: "",
+	heroSubtitle: "High quality. Bold designs. Made for those who lead, not follow.",
 	heroImage: "https://images.unsplash.com/photo-1529139574466-a303027c1d8b?q=80&w=1400&auto=format&fit=crop",
-	heroButtonLabel: "Shop Now",
-	heroExploreButtonLabel: "Explore Collection",
+	heroButtonLabel: "Shop Collection",
+	heroExploreButtonLabel: "New Arrivals",
 	navLabelShop: "Shop",
 	navLabelCategories: "Categories",
 	navLabelCollections: "Collections",
@@ -85,6 +164,11 @@ export const defaultSiteSettings: SiteSettings = {
 	sectionSpecialOfferTitle: "Up to 50% off on selected items",
 	sectionSpecialOfferButtonLabel: "Shop Now",
 	sectionOrder: ["shopByCategory", "products", "newArrivals", "bestSellers", "trending", "featured", "sale", "specialOffer"],
+	esewaEnabled: true,
+	esewaLabel: "eSewa",
+	esewaTitle: "Pay with eSewa",
+	esewaDescription: "Scan this QR in your eSewa app to pay faster.",
+	esewaButtonLabel: "Pay with eSewa",
 	esewaQrImage: "",
 	whatsappNumber: "9779812345678",
 	whatsappMessage: "Hi, I just placed an order from 9TEEN. Order ID: {orderId}, Total: NPR {total}. Please confirm the details.",
@@ -101,7 +185,7 @@ export const defaultSiteSettings: SiteSettings = {
 	footerDeveloperLinkLabel: "Contact Developer",
 	footerMiddleText: "Need help with your order or payment? Message us on WhatsApp in the middle section below.",
 	footerWhatsAppButtonLabel: "WhatsApp Support",
-	footerUpdatedDate: "22/07/2026",
+	footerUpdatedDate: "24/07/2026 09:03",
 	designImages: [
 		"https://images.unsplash.com/photo-1483985988355-763728e1935b?q=80&w=900&auto=format&fit=crop",
 		"https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?q=80&w=900&auto=format&fit=crop",
@@ -111,7 +195,7 @@ export const defaultSiteSettings: SiteSettings = {
 
 export function getCategories(): Category[] {
 	try {
-		const raw = localStorage.getItem("19teen_categories");
+		const raw = localStorage.getItem(CATEGORIES_STORAGE_KEY);
 		if (!raw) return categories;
 		const saved = JSON.parse(raw) as Category[];
 		return saved.map(c => ({ ...categories.find(d => d.id === c.id) ?? c, ...c }));
@@ -122,7 +206,8 @@ export function getCategories(): Category[] {
 
 export function saveCategories(categoryList: Category[]) {
 	try {
-		localStorage.setItem("19teen_categories", JSON.stringify(categoryList));
+		setLocalValue(CATEGORIES_STORAGE_KEY, categoryList);
+		void writeSharedValue(CATEGORIES_STORAGE_KEY, categoryList);
 		notifyDataChanged();
 	} catch {}
 }
@@ -140,7 +225,8 @@ export function getProducts(): Product[] {
 
 export function saveProducts(products: Product[]) {
 	try {
-		localStorage.setItem(PRODUCT_STORAGE_KEY, JSON.stringify(products));
+		setLocalValue(PRODUCT_STORAGE_KEY, products);
+		void writeSharedValue(PRODUCT_STORAGE_KEY, products);
 		notifyDataChanged();
 	} catch {}
 }
@@ -156,7 +242,8 @@ export function getSiteSettings(): SiteSettings {
 
 export function saveSiteSettings(settings: SiteSettings) {
 	try {
-		localStorage.setItem(SITE_SETTINGS_KEY, JSON.stringify(settings));
+		setLocalValue(SITE_SETTINGS_KEY, settings);
+		void writeSharedValue(SITE_SETTINGS_KEY, settings);
 		notifyDataChanged();
 	} catch {}
 }
@@ -172,7 +259,8 @@ export function getUserAccounts(): UserAccount[] {
 
 export function saveUserAccounts(accounts: UserAccount[]) {
 	try {
-		localStorage.setItem(USER_ACCOUNTS_KEY, JSON.stringify(accounts));
+		setLocalValue(USER_ACCOUNTS_KEY, accounts);
+		void writeSharedValue(USER_ACCOUNTS_KEY, accounts);
 		notifyDataChanged();
 	} catch {}
 }
@@ -248,6 +336,20 @@ export function saveAllAdminData() {
 		saveSiteSettings(getSiteSettings());
 		saveCoupons(getCoupons());
 		saveReviews(getReviews());
+		saveOrders(getOrders());
+		saveUserAccounts(getUserAccounts());
+		saveWishlist(getWishlist());
+		const cart = getLocalValue("19teen_cart", []);
+		setLocalValue("19teen_cart", cart);
+		void writeSharedValue("19teen_cart", cart);
+		const lastOrder = getLocalValue("19teen_last_order", null);
+		setLocalValue("19teen_last_order", lastOrder);
+		void writeSharedValue("19teen_last_order", lastOrder);
+		const session = getCurrentUser();
+		if (session) {
+			setLocalValue(USER_SESSION_KEY, session);
+			void writeSharedValue(USER_SESSION_KEY, session);
+		}
 		notifyDataChanged();
 	} catch {}
 }
@@ -291,7 +393,8 @@ export function getCoupons(): Coupon[] {
 
 export function saveCoupons(coupons: Coupon[]) {
 	try {
-		localStorage.setItem(COUPON_STORAGE_KEY, JSON.stringify(coupons));
+		setLocalValue(COUPON_STORAGE_KEY, coupons);
+		void writeSharedValue(COUPON_STORAGE_KEY, coupons);
 		notifyDataChanged();
 	} catch {}
 }
@@ -305,7 +408,8 @@ export function getReviews(): Review[] {
 
 export function saveReviews(reviews: Review[]) {
 	try {
-		localStorage.setItem(REVIEW_STORAGE_KEY, JSON.stringify(reviews));
+		setLocalValue(REVIEW_STORAGE_KEY, reviews);
+		void writeSharedValue(REVIEW_STORAGE_KEY, reviews);
 		notifyDataChanged();
 	} catch {}
 }
@@ -321,7 +425,8 @@ export function getWishlist(): string[] {
 
 export function saveWishlist(ids: string[]) {
 	try {
-		localStorage.setItem(WISHLIST_STORAGE_KEY, JSON.stringify(ids));
+		setLocalValue(WISHLIST_STORAGE_KEY, ids);
+		void writeSharedValue(WISHLIST_STORAGE_KEY, ids);
 		notifyDataChanged();
 	} catch {}
 }
@@ -342,13 +447,20 @@ export function addReview(review: Review) {
 	} catch {}
 }
 
+export function saveOrders(orders: Order[]) {
+	try {
+		setLocalValue("19teen_orders", orders);
+		void writeSharedValue("19teen_orders", orders);
+		notifyDataChanged();
+	} catch {}
+}
+
 export function saveOrder(order: Order) {
 	try {
 		const raw = localStorage.getItem("19teen_orders");
 		const arr: Order[] = raw ? JSON.parse(raw) : [];
 		arr.unshift(order);
-		localStorage.setItem("19teen_orders", JSON.stringify(arr));
-		notifyDataChanged();
+		saveOrders(arr);
 	} catch {}
 }
 

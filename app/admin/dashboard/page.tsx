@@ -1,5 +1,5 @@
 "use client";
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { Product } from "@/lib/types";
 import { getOrders, getProducts } from "@/lib/data";
 import { ChartBar, ShoppingBag, Users, Package, ArrowUpRight, Clock, ClipboardList } from "lucide-react";
@@ -7,6 +7,23 @@ import { ChartBar, ShoppingBag, Users, Package, ArrowUpRight, Clock, ClipboardLi
 export default function AdminDashboardPage() {
   const orders = getOrders();
   const products = getProducts();
+
+  const [nowFormatted, setNowFormatted] = useState(() => {
+    const now = new Date();
+    const pad = (n:number) => n.toString().padStart(2,'0');
+    return `${pad(now.getDate())}/${pad(now.getMonth()+1)}/${now.getFullYear()} ${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+  });
+
+  useEffect(() => {
+    const pad = (n:number) => n.toString().padStart(2,'0');
+    const tick = () => {
+      const now = new Date();
+      setNowFormatted(`${pad(now.getDate())}/${pad(now.getMonth()+1)}/${now.getFullYear()} ${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`);
+    };
+    tick();
+    const interval = setInterval(tick, 1000);
+    return () => clearInterval(interval);
+  }, []);
 
   const totalRevenue = useMemo(() => orders.reduce((sum, order) => sum + order.total, 0), [orders]);
   const totalCustomers = useMemo(() => new Set(orders.map(order => order.customer.phone || order.customer.email)).size, [orders]);
@@ -46,7 +63,7 @@ export default function AdminDashboardPage() {
             <p className="text-sm text-white/60 mt-2">Manage products, orders, and WhatsApp messaging from one central panel.</p>
           </div>
           <div className="rounded-3xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white/80 inline-flex items-center gap-2">
-            <Clock className="w-4 h-4 text-red-400" /> Today: Jul 11, 2025
+            <Clock className="w-4 h-4 text-red-400" /> Today: {nowFormatted}
           </div>
         </div>
 

@@ -14,6 +14,10 @@ export default function CheckoutPage() {
   const [loading, setLoading] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<"esewa"|"whatsapp">("esewa");
   const [whatsappMessage, setWhatsappMessage] = useState(settings.whatsappMessage);
+  const paymentOptions = [
+    ...(settings.esewaEnabled !== false ? [{ value: "esewa" as const, label: settings.esewaLabel || "eSewa" }] : []),
+    { value: "whatsapp" as const, label: settings.footerWhatsAppButtonLabel || "WhatsApp" },
+  ];
   const [form, setForm] = useState({ name: "", phone: "", email: "", address: "", city: "Kathmandu" });
 
   useEffect(() => {
@@ -110,11 +114,8 @@ export default function CheckoutPage() {
               <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4">
                 <p className="text-sm font-semibold text-gray-700 mb-3">Payment method</p>
                 <div className="grid grid-cols-2 gap-3">
-                  {[
-                    { value: "esewa", label: "eSewa" },
-                    { value: "whatsapp", label: "WhatsApp" },
-                  ].map(option => (
-                    <button key={option.value} type="button" onClick={() => setPaymentMethod(option.value as "esewa" | "whatsapp")}
+                  {paymentOptions.map(option => (
+                    <button key={option.value} type="button" onClick={() => setPaymentMethod(option.value)}
                       className={`rounded-2xl border px-4 py-3 text-sm font-semibold transition ${paymentMethod === option.value ? "border-[#f97316] bg-[#ffedd5] text-[#b45309]" : "border-gray-200 bg-white text-gray-700 hover:border-gray-300"}`}>
                       {option.label}
                     </button>
@@ -122,7 +123,7 @@ export default function CheckoutPage() {
                 </div>
                 {paymentMethod === "esewa" && settings.esewaQrImage && (
                   <div className="mt-4 rounded-2xl border border-dashed border-gray-300 bg-white p-4 text-center">
-                    <p className="text-sm text-gray-600 mb-3">Scan this QR in your eSewa app to pay faster.</p>
+                    <p className="text-sm text-gray-600 mb-3">{settings.esewaDescription || "Scan this QR in your eSewa app to pay faster."}</p>
                     <img src={settings.esewaQrImage} alt="eSewa QR" className="mx-auto h-40 object-contain" />
                   </div>
                 )}
@@ -137,7 +138,7 @@ export default function CheckoutPage() {
             </div>
             <button type="submit" disabled={loading || items.length === 0}
               className="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-4 rounded-xl text-sm flex items-center justify-center gap-2 transition-colors disabled:opacity-50">
-              {loading ? <><Loader2 className="w-4 h-4 animate-spin" />Preparing payment...</> : `Pay Rs ${total.toLocaleString()} via ${paymentMethod === "esewa" ? "eSewa" : "WhatsApp"}`}
+              {loading ? <><Loader2 className="w-4 h-4 animate-spin" />Preparing payment...</> : `Pay Rs ${total.toLocaleString()} via ${paymentMethod === "esewa" ? (settings.esewaLabel || "eSewa") : (settings.footerWhatsAppButtonLabel || "WhatsApp")}`}
             </button>
           </form>
           <div className="md:col-span-2 bg-white rounded-xl border border-gray-100 p-4 h-fit">

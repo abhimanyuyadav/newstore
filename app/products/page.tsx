@@ -97,8 +97,8 @@ function ProductsPageContent() {
         <div className="flex flex-wrap gap-2 mb-4">
           <button onClick={() => setSelectedCat("all")} className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-colors ${selectedCat === "all" ? "bg-black text-white" : "bg-white border border-gray-200 text-gray-600 hover:border-black"}`}>All</button>
           {categories.map(c => (
-            <button key={c.id} onClick={() => setSelectedCat(c.id)} className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-colors ${selectedCat === c.id ? "bg-black text-white" : "bg-white border border-gray-200 text-gray-600 hover:border-black"}`}>
-              {c.emoji} {c.name}
+            <button key={c.id} onClick={() => setSelectedCat(c.id)} className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold transition-colors ${selectedCat === c.id ? "bg-black text-white" : "bg-white border border-gray-200 text-gray-600 hover:border-black"}`}>
+              {c.image ? <img src={c.image} alt={c.name} className="w-6 h-6 rounded-full object-cover" /> : <span>{c.emoji}</span>} {c.name}
             </button>
           ))}
         </div>

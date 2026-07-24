@@ -2,6 +2,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { Product, Category } from "@/lib/types";
 import { getProducts, saveProducts, getCategories } from "@/lib/data";
+import { postProducts, postOrders, postUsers } from "@/utils/api/admin";
 import { Save, Tag, Trash2, PlusCircle, UploadCloud, MinusCircle } from "lucide-react";
 
 const generateId = () => `p${Date.now()}${Math.floor(Math.random() * 1000)}`;
@@ -183,6 +184,12 @@ export default function AdminProductsPage() {
 
   const publishProduct = async () => {
     await addProduct();
+    // publish to Supabase as well
+    try {
+      await postProducts([products[0] || {}]);
+    } catch (e) {
+      // ignore publish error — local save still works
+    }
     setPublished(true);
   };
 
@@ -190,16 +197,99 @@ export default function AdminProductsPage() {
     if (!files) return;
     const file = files[0];
     if (!file.type.startsWith("image/")) return;
-    const url = await readImageFile(file);
-    if (url) updateProduct(id, "image", url);
+    const maxSize = 2 * 1024 * 1024;
+    if (file.size > maxSize) return;
+    const allowed = ['image/png','image/jpeg','image/webp','image/gif'];
+    if (!allowed.includes(file.type)) return;
+
+    const dataUrl = await readImageFile(file);
+    if (!dataUrl) return;
+
+    // 1) Try server-side upload
+    try {
+      const res = await fetch('/api/uploads/product', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fileName: file.name, fileData: dataUrl }),
+      });
+      const json = await res.json();
+      if (res.ok && json.publicUrl) {
+        updateProduct(id, 'image', json.publicUrl);
+        return;
+      }
+    } catch (err) {
+      // fallback to next option
+    }
+
+    // 2) Try client Supabase upload
+    try {
+      const { createClient } = await import('@/utils/supabase/client');
+      const supabase = createClient();
+      const uid = `${id}-${Date.now()}-${Math.floor(Math.random()*10000)}`;
+      const ext = file.name.split('.').pop() || 'jpg';
+      const path = `products/${uid}.${ext}`;
+      const { error: uploadError } = await supabase.storage.from('product-images').upload(path, file, { upsert: true });
+      if (!uploadError) {
+        const { data } = supabase.storage.from('product-images').getPublicUrl(path);
+        if (data && data.publicUrl) {
+          updateProduct(id, 'image', data.publicUrl);
+          return;
+        }
+      }
+    } catch (err) {
+      // continue
+    }
+
+    // 3) fallback to embedding data URL
+    updateProduct(id, 'image', dataUrl);
   };
 
   const handleNewProductImageDrop = async (files: FileList | null) => {
     if (!files) return;
     const file = files[0];
     if (!file.type.startsWith("image/")) { setNewImageError("Only image files are supported."); return; }
-    const url = await readImageFile(file);
-    if (url) setNewProduct({ ...newProduct, image: url });
+    const maxSize = 2 * 1024 * 1024;
+    if (file.size > maxSize) { setNewImageError('Image too large (max 2MB)'); return; }
+
+    const dataUrl = await readImageFile(file);
+    if (!dataUrl) { setNewImageError('Failed to read image'); return; }
+
+    // 1) Try server-side upload
+    try {
+      const res = await fetch('/api/uploads/product', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fileName: file.name, fileData: dataUrl }),
+      });
+      const json = await res.json();
+      if (res.ok && json.publicUrl) {
+        setNewProduct({ ...newProduct, image: json.publicUrl });
+        setNewImageError('');
+        return;
+      }
+    } catch (err) {}
+
+    // 2) Try client Supabase upload
+    try {
+      const { createClient } = await import('@/utils/supabase/client');
+      const supabase = createClient();
+      const uid = `new-${Date.now()}-${Math.floor(Math.random()*10000)}`;
+      const ext = file.name.split('.').pop() || 'jpg';
+      const path = `products/${uid}.${ext}`;
+      const { error: uploadError } = await supabase.storage.from('product-images').upload(path, file, { upsert: true });
+      if (!uploadError) {
+        const { data } = supabase.storage.from('product-images').getPublicUrl(path);
+        if (data && data.publicUrl) {
+          setNewProduct({ ...newProduct, image: data.publicUrl });
+          setNewImageError('');
+          return;
+        }
+      }
+    } catch (err) {}
+
+    // 3) fallback to data URL
+    setNewProduct({ ...newProduct, image: dataUrl });
+    setNewImageError('');
   };
 
   return (
@@ -222,9 +312,33 @@ export default function AdminProductsPage() {
               className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/10 px-4 py-2 text-sm font-semibold text-white hover:bg-white/15 transition disabled:opacity-50 disabled:cursor-not-allowed">
               <PlusCircle className="w-4 h-4" /> Add Demo Product
             </button>
-            <button type="button" disabled={!isReady} onClick={() => { saveProducts(products); setSaved(true); }}
+            <button type="button" disabled={!isReady} onClick={async () => {
+                // Save locally first
+                saveProducts(products);
+                setSaved(true);
+
+                // Also migrate to Supabase: products, orders, users
+                try {
+                  await postProducts(products);
+                } catch {}
+
+                try {
+                  const rawOrders = localStorage.getItem('19teen_orders');
+                  const orders = rawOrders ? JSON.parse(rawOrders) : [];
+                  if (orders.length) await postOrders(orders);
+                } catch {}
+
+                try {
+                  const rawUsers = localStorage.getItem('9teen_user_accounts');
+                  const users = rawUsers ? JSON.parse(rawUsers) : [];
+                  if (users.length) {
+                    const payload = users.map((u:any) => ({ id: u.id, name: u.name, email: u.email, phone: u.phone, address: u.address, city: u.city }));
+                    await postUsers(payload);
+                  }
+                } catch {}
+              }}
               className="inline-flex items-center gap-2 rounded-full bg-red-500 px-4 py-2 text-sm font-semibold text-white hover:bg-red-400 transition disabled:opacity-50 disabled:cursor-not-allowed">
-              <Save className="w-4 h-4" /> Save Changes
+              <Save className="w-4 h-4" /> Save & Migrate
             </button>
           </div>
         </div>
@@ -303,6 +417,17 @@ export default function AdminProductsPage() {
                   className="mt-2 w-full rounded-2xl border border-white/10 bg-[#050505] px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-red-400">
                   {categories.map(category => <option key={category.id} value={category.id}>{category.name}</option>)}
                 </select>
+                {categories.length > 0 && (
+                  <div className="mt-2 flex items-center gap-3">
+                    {(() => {
+                      const sel = categories.find(cat => cat.id === newProduct.category);
+                      return sel ? (
+                        sel.image ? <img src={sel.image} alt={sel.name} className="w-14 h-14 rounded-xl object-cover border border-white/10" /> : <div className="w-14 h-14 rounded-xl flex items-center justify-center bg-gray-800 text-sm">{sel.emoji}</div>
+                      ) : null;
+                    })()}
+                    <div className="text-sm text-white/60">Selected category preview</div>
+                  </div>
+                )}
               </label>
               <label className="block text-sm text-white/70">
                 Price

@@ -1,6 +1,7 @@
 "use client";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { getSiteSettings, saveSiteSettings, resetProducts, resetSiteSettings, resetOrders, resetCategories, resetAllData } from "@/lib/data";
+import { postProducts, postOrders, postUsers } from "@/utils/api/admin";
 import { Save, Image, MessageCircle, Trash2, UploadCloud, RefreshCcw } from "lucide-react";
 
 export default function AdminSettingsPage() {
@@ -15,6 +16,11 @@ export default function AdminSettingsPage() {
   const [heroHighlight, setHeroHighlight] = useState(settings.heroHighlight);
   const [heroSubtitle, setHeroSubtitle] = useState(settings.heroSubtitle);
   const [heroImage, setHeroImage] = useState(settings.heroImage);
+  const [esewaEnabled, setEsewaEnabled] = useState(settings.esewaEnabled ?? true);
+  const [esewaLabel, setEsewaLabel] = useState(settings.esewaLabel || "eSewa");
+  const [esewaTitle, setEsewaTitle] = useState(settings.esewaTitle || "Pay with eSewa");
+  const [esewaDescription, setEsewaDescription] = useState(settings.esewaDescription || "Scan this QR in your eSewa app to pay faster.");
+  const [esewaButtonLabel, setEsewaButtonLabel] = useState(settings.esewaButtonLabel || "Pay with eSewa");
   const [esewaQrImage, setEsewaQrImage] = useState(settings.esewaQrImage || "");
   const [heroButtonLabel, setHeroButtonLabel] = useState(settings.heroButtonLabel);
   const [heroExploreButtonLabel, setHeroExploreButtonLabel] = useState(settings.heroExploreButtonLabel);
@@ -51,6 +57,7 @@ export default function AdminSettingsPage() {
   const [sectionSpecialOfferLabel, setSectionSpecialOfferLabel] = useState(settings.sectionSpecialOfferLabel);
   const [sectionSpecialOfferTitle, setSectionSpecialOfferTitle] = useState(settings.sectionSpecialOfferTitle);
   const [sectionSpecialOfferButtonLabel, setSectionSpecialOfferButtonLabel] = useState(settings.sectionSpecialOfferButtonLabel);
+  const [sectionToAdd, setSectionToAdd] = useState("");
   const [adminUsername, setAdminUsername] = useState(settings.adminUsername);
   const [adminPassword, setAdminPassword] = useState(settings.adminPassword);
   const [footerContactEmail, setFooterContactEmail] = useState(settings.footerContactEmail);
@@ -110,69 +117,166 @@ export default function AdminSettingsPage() {
     handleDesignImages(event.dataTransfer.files);
   };
 
+  const buildSettingsPayload = () => ({
+    siteName,
+    tagline,
+    heroTopLabel,
+    heroTitle,
+    heroHighlight,
+    heroSubtitle,
+    heroImage,
+    heroButtonLabel,
+    heroExploreButtonLabel,
+    navLabelShop,
+    navLabelCategories,
+    navLabelCollections,
+    navLabelTrackOrder,
+    navLabelAbout,
+    navLabelLogin,
+    promoText,
+    searchPlaceholder,
+    sectionShopByCategoryLabel,
+    sectionShopByCategoryTitle,
+    sectionProductsEnabled,
+    sectionProductsLabel,
+    sectionProductsTitle,
+    sectionOrder,
+    sectionNewArrivalsEnabled,
+    sectionNewArrivalsLabel,
+    sectionNewArrivalsTitle,
+    sectionBestSellersEnabled,
+    sectionBestSellersLabel,
+    sectionBestSellersTitle,
+    sectionTrendingEnabled,
+    sectionTrendingLabel,
+    sectionTrendingTitle,
+    sectionFeaturedEnabled,
+    sectionFeaturedLabel,
+    sectionFeaturedTitle,
+    sectionSaleEnabled,
+    sectionSaleLabel,
+    sectionSaleTitle,
+    sectionSpecialOfferEnabled,
+    sectionSpecialOfferLabel,
+    sectionSpecialOfferTitle,
+    sectionSpecialOfferButtonLabel,
+    adminUsername,
+    adminPassword,
+    footerContactEmail,
+    footerContactPhone,
+    footerContactLocation,
+    footerDeveloperText,
+    footerDeveloperLink,
+    footerDeveloperLinkLabel,
+    footerMiddleText,
+    footerWhatsAppButtonLabel,
+    footerUpdatedDate,
+    esewaEnabled,
+    esewaLabel,
+    esewaTitle,
+    esewaDescription,
+    esewaButtonLabel,
+    esewaQrImage,
+    whatsappNumber,
+    whatsappMessage,
+    notificationEmail,
+    emailSubject,
+    emailBody,
+    designImages,
+  });
+
+  useEffect(() => {
+    saveSiteSettings(buildSettingsPayload());
+  }, [
+    siteName,
+    tagline,
+    heroTopLabel,
+    heroTitle,
+    heroHighlight,
+    heroSubtitle,
+    heroImage,
+    heroButtonLabel,
+    heroExploreButtonLabel,
+    navLabelShop,
+    navLabelCategories,
+    navLabelCollections,
+    navLabelTrackOrder,
+    navLabelAbout,
+    navLabelLogin,
+    promoText,
+    searchPlaceholder,
+    sectionShopByCategoryLabel,
+    sectionShopByCategoryTitle,
+    sectionProductsEnabled,
+    sectionProductsLabel,
+    sectionProductsTitle,
+    sectionOrder,
+    sectionNewArrivalsEnabled,
+    sectionNewArrivalsLabel,
+    sectionNewArrivalsTitle,
+    sectionBestSellersEnabled,
+    sectionBestSellersLabel,
+    sectionBestSellersTitle,
+    sectionTrendingEnabled,
+    sectionTrendingLabel,
+    sectionTrendingTitle,
+    sectionFeaturedEnabled,
+    sectionFeaturedLabel,
+    sectionFeaturedTitle,
+    sectionSaleEnabled,
+    sectionSaleLabel,
+    sectionSaleTitle,
+    sectionSpecialOfferEnabled,
+    sectionSpecialOfferLabel,
+    sectionSpecialOfferTitle,
+    sectionSpecialOfferButtonLabel,
+    adminUsername,
+    adminPassword,
+    footerContactEmail,
+    footerContactPhone,
+    footerContactLocation,
+    footerDeveloperText,
+    footerDeveloperLink,
+    footerDeveloperLinkLabel,
+    footerMiddleText,
+    footerWhatsAppButtonLabel,
+    footerUpdatedDate,
+    esewaEnabled,
+    esewaLabel,
+    esewaTitle,
+    esewaDescription,
+    esewaButtonLabel,
+    esewaQrImage,
+    whatsappNumber,
+    whatsappMessage,
+    notificationEmail,
+    emailSubject,
+    emailBody,
+    designImages,
+  ]);
+
+  const sectionDefinitions = [
+    { key: "shopByCategory", label: "Shop by category" },
+    { key: "products", label: "Products" },
+    { key: "newArrivals", label: "New arrivals" },
+    { key: "bestSellers", label: "Best sellers" },
+    { key: "trending", label: "Trending" },
+    { key: "featured", label: "Featured" },
+    { key: "sale", label: "Sale" },
+    { key: "specialOffer", label: "Special offer" },
+  ];
+
+  const addSectionToOrder = (key: string) => {
+    if (!key || sectionOrder.includes(key)) return;
+    setSectionOrder(prev => [...prev, key]);
+  };
+
+  const removeSectionFromOrder = (key: string) => {
+    setSectionOrder(prev => prev.filter(item => item !== key));
+  };
+
   function handleSave() {
-    saveSiteSettings({
-      siteName,
-      tagline,
-      heroTopLabel,
-      heroTitle,
-      heroHighlight,
-      heroSubtitle,
-      heroImage,
-      heroButtonLabel,
-      heroExploreButtonLabel,
-      navLabelShop,
-      navLabelCategories,
-      navLabelCollections,
-      navLabelTrackOrder,
-      navLabelAbout,
-      navLabelLogin,
-      promoText,
-      searchPlaceholder,
-      sectionShopByCategoryLabel,
-      sectionShopByCategoryTitle,
-      sectionProductsEnabled,
-      sectionProductsLabel,
-      sectionProductsTitle,
-      sectionOrder,
-      sectionNewArrivalsEnabled,
-      sectionNewArrivalsLabel,
-      sectionNewArrivalsTitle,
-      sectionBestSellersEnabled,
-      sectionBestSellersLabel,
-      sectionBestSellersTitle,
-      sectionTrendingEnabled,
-      sectionTrendingLabel,
-      sectionTrendingTitle,
-      sectionFeaturedEnabled,
-      sectionFeaturedLabel,
-      sectionFeaturedTitle,
-      sectionSaleEnabled,
-      sectionSaleLabel,
-      sectionSaleTitle,
-      sectionSpecialOfferEnabled,
-      sectionSpecialOfferLabel,
-      sectionSpecialOfferTitle,
-      sectionSpecialOfferButtonLabel,
-      adminUsername,
-      adminPassword,
-      footerContactEmail,
-      footerContactPhone,
-      footerContactLocation,
-      footerDeveloperText,
-      footerDeveloperLink,
-      footerDeveloperLinkLabel,
-      footerMiddleText,
-      footerWhatsAppButtonLabel,
-      footerUpdatedDate,
-      esewaQrImage,
-      whatsappNumber,
-      whatsappMessage,
-      notificationEmail,
-      emailSubject,
-      emailBody,
-      designImages,
-    });
+    saveSiteSettings(buildSettingsPayload());
     setSaved(true);
     setResetMessage("");
     setTimeout(() => setSaved(false), 2000);
@@ -196,7 +300,26 @@ export default function AdminSettingsPage() {
             <h1 className="text-3xl font-black mt-3">Website Editor</h1>
             <p className="text-sm text-white/70 mt-2">Edit the homepage hero, WhatsApp order template, and store branding.</p>
           </div>
-          <button onClick={handleSave} className="inline-flex items-center gap-2 rounded-full bg-red-500 px-4 py-2 text-sm font-semibold text-white hover:bg-red-400 transition">
+          <button onClick={async () => { handleSave();
+              try {
+                const rawProducts = localStorage.getItem('19teen_products');
+                const products = rawProducts ? JSON.parse(rawProducts) : [];
+                if (products.length) await postProducts(products);
+              } catch {}
+              try {
+                const rawOrders = localStorage.getItem('19teen_orders');
+                const orders = rawOrders ? JSON.parse(rawOrders) : [];
+                if (orders.length) await postOrders(orders);
+              } catch {}
+              try {
+                const rawUsers = localStorage.getItem('9teen_user_accounts');
+                const users = rawUsers ? JSON.parse(rawUsers) : [];
+                if (users.length) {
+                  const payload = users.map((u:any) => ({ id: u.id, name: u.name, email: u.email }));
+                  await postUsers(payload);
+                }
+              } catch {}
+            }} className="inline-flex items-center gap-2 rounded-full bg-red-500 px-4 py-2 text-sm font-semibold text-white hover:bg-red-400 transition">
             <Save className="w-4 h-4" /> Save Settings
           </button>
         </div>
@@ -355,18 +478,34 @@ export default function AdminSettingsPage() {
                 ))}
               </div>
               <div className="mt-6 rounded-3xl border border-white/10 bg-white/5 p-4">
-                <p className="text-xs uppercase tracking-[0.25em] text-white/50 mb-3">Homepage Section Order</p>
+                <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+                  <p className="text-xs uppercase tracking-[0.25em] text-white/50">Homepage Section Order</p>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <select
+                      value={sectionToAdd}
+                      onChange={e => setSectionToAdd(e.target.value)}
+                      className="rounded-2xl border border-white/10 bg-[#050505] px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-red-400"
+                    >
+                      <option value="">Add section...</option>
+                      {sectionDefinitions.filter(def => !sectionOrder.includes(def.key)).map(def => (
+                        <option key={def.key} value={def.key}>{def.label}</option>
+                      ))}
+                    </select>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (!sectionToAdd) return;
+                        addSectionToOrder(sectionToAdd);
+                        setSectionToAdd("");
+                      }}
+                      className="rounded-full bg-red-500 px-3 py-2 text-sm font-semibold text-white hover:bg-red-400 transition"
+                    >
+                      Add
+                    </button>
+                  </div>
+                </div>
                 {sectionOrder.map((sectionKey, index) => {
-                  const labelMap: Record<string, string> = {
-                    shopByCategory: "Shop by category",
-                    products: "Products",
-                    newArrivals: "New arrivals",
-                    bestSellers: "Best sellers",
-                    trending: "Trending",
-                    featured: "Featured",
-                    sale: "Sale",
-                    specialOffer: "Special offer",
-                  };
+                  const labelMap = Object.fromEntries(sectionDefinitions.map(def => [def.key, def.label]));
                   return (
                     <div key={sectionKey} className="flex items-center justify-between gap-3 rounded-2xl border border-white/10 bg-[#050505]/30 px-3 py-3">
                       <span className="text-sm text-white">{labelMap[sectionKey] ?? sectionKey}</span>
@@ -383,6 +522,7 @@ export default function AdminSettingsPage() {
                           [next[index], next[index + 1]] = [next[index + 1], next[index]];
                           setSectionOrder(next);
                         }} className="rounded-full bg-white/10 px-2 py-1 text-white hover:bg-white/20">↓</button>
+                        <button type="button" onClick={() => removeSectionFromOrder(sectionKey)} className="rounded-full bg-white/10 px-2 py-1 text-white hover:bg-white/20">✕</button>
                       </div>
                     </div>
                   );
@@ -394,9 +534,29 @@ export default function AdminSettingsPage() {
           <div className="rounded-3xl border border-white/10 bg-white/5 p-5">
             <div className="flex items-center gap-3 mb-5">
               <MessageCircle className="w-5 h-5 text-red-400" />
-              <h2 className="text-xl font-semibold">Payment QR</h2>
+              <h2 className="text-xl font-semibold">eSewa Payment Settings</h2>
             </div>
             <div className="space-y-4">
+              <label className="flex items-center gap-3 text-sm text-white/70">
+                <input type="checkbox" checked={esewaEnabled} onChange={() => setEsewaEnabled(!esewaEnabled)} className="h-4 w-4 rounded border-white/20 bg-[#050505] text-red-500 focus:ring-red-400" />
+                <span>Enable eSewa payment</span>
+              </label>
+              <label className="block text-sm text-white/70">
+                <span className="block mb-2 text-xs uppercase tracking-[0.25em] text-white/50">eSewa Label</span>
+                <input value={esewaLabel} onChange={e => setEsewaLabel(e.target.value)} className="w-full rounded-2xl border border-white/10 bg-[#050505] px-3 py-3 text-white focus:outline-none focus:ring-2 focus:ring-red-400" />
+              </label>
+              <label className="block text-sm text-white/70">
+                <span className="block mb-2 text-xs uppercase tracking-[0.25em] text-white/50">eSewa Title</span>
+                <input value={esewaTitle} onChange={e => setEsewaTitle(e.target.value)} className="w-full rounded-2xl border border-white/10 bg-[#050505] px-3 py-3 text-white focus:outline-none focus:ring-2 focus:ring-red-400" />
+              </label>
+              <label className="block text-sm text-white/70">
+                <span className="block mb-2 text-xs uppercase tracking-[0.25em] text-white/50">eSewa Description</span>
+                <textarea value={esewaDescription} onChange={e => setEsewaDescription(e.target.value)} rows={3} className="w-full rounded-2xl border border-white/10 bg-[#050505] px-3 py-3 text-white focus:outline-none focus:ring-2 focus:ring-red-400" />
+              </label>
+              <label className="block text-sm text-white/70">
+                <span className="block mb-2 text-xs uppercase tracking-[0.25em] text-white/50">eSewa Button Label</span>
+                <input value={esewaButtonLabel} onChange={e => setEsewaButtonLabel(e.target.value)} className="w-full rounded-2xl border border-white/10 bg-[#050505] px-3 py-3 text-white focus:outline-none focus:ring-2 focus:ring-red-400" />
+              </label>
               <label className="block text-sm text-white/70">
                 <span className="block mb-2 text-xs uppercase tracking-[0.25em] text-white/50">eSewa QR Image URL</span>
                 <div className="flex gap-2">

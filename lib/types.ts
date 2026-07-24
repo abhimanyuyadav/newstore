@@ -71,6 +71,11 @@ export interface SiteSettings {
   sectionSpecialOfferTitle: string;
   sectionSpecialOfferButtonLabel: string;
   sectionOrder: string[];
+  esewaEnabled: boolean;
+  esewaLabel: string;
+  esewaTitle: string;
+  esewaDescription: string;
+  esewaButtonLabel: string;
   esewaQrImage: string;
   whatsappNumber: string;
   whatsappMessage: string;
@@ -90,6 +95,6 @@ export interface SiteSettings {
   footerUpdatedDate: string;
   designImages: string[];
 }
-export interface Category { id: string; name: string; emoji: string; enabled: boolean; subcategories?: string[]; }
+export interface Category { id: string; name: string; emoji: string; enabled: boolean; subcategories?: string[]; image?: string; }
 export interface Coupon { id: string; code: string; discount: number; active: boolean; description?: string; }
 export interface Review { id: string; productId: string; name: string; rating: number; comment: string; status: "pending"|"approved"|"rejected"; date: string; }
