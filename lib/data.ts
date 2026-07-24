@@ -21,20 +21,6 @@ function isBrowser(): boolean {
 	return typeof window !== "undefined";
 }
 
-function migrateLegacyStorageKeys() {
-	if (!isBrowser()) return;
-
-	try {
-		const legacyAdminValue = window.localStorage.getItem(LEGACY_ADMIN_STORAGE_KEY);
-		if (legacyAdminValue && !window.localStorage.getItem(ADMIN_STORAGE_KEY)) {
-			window.localStorage.setItem(ADMIN_STORAGE_KEY, legacyAdminValue);
-		}
-		if (window.localStorage.getItem(ADMIN_STORAGE_KEY)) {
-			window.localStorage.removeItem(LEGACY_ADMIN_STORAGE_KEY);
-		}
-	} catch {}
-}
-
 function notifyDataChanged() {
 	if (!isBrowser()) return;
 	window.dispatchEvent(new CustomEvent(DATA_CHANGED_EVENT));
@@ -50,31 +36,15 @@ function readCachedValue<T>(key: string, fallback: T): T {
 		return fallback;
 	}
 
-	try {
-		const raw = window.localStorage.getItem(key);
-		if (!raw) return fallback;
-		const parsed = JSON.parse(raw) as T;
-		sharedCache[key] = parsed;
-		return parsed;
-	} catch {
-		return fallback;
-	}
+	return fallback;
 }
 
 function writeCachedValue(key: string, value: unknown) {
 	sharedCache[key] = value;
-	if (!isBrowser()) return;
-	try {
-		window.localStorage.setItem(key, JSON.stringify(value));
-	} catch {}
 }
 
 function clearCachedValue(key: string) {
 	delete sharedCache[key];
-	if (!isBrowser()) return;
-	try {
-		window.localStorage.removeItem(key);
-	} catch {}
 }
 
 async function clearSharedValue(key: string) {
@@ -125,7 +95,6 @@ async function writeSharedValue(key: string, value: unknown) {
 }
 
 if (isBrowser()) {
-	migrateLegacyStorageKeys();
 	void refreshFromSharedStorage(true);
 }
 
@@ -393,6 +362,41 @@ export function saveAllAdminData() {
 	notifyDataChanged();
 }
 
+export function getLastOrder(): Order | null {
+	return readCachedValue<Order | null>("9teen_last_order", null);
+}
+
+export function saveLastOrder(order: Order | null) {
+	writeCachedValue("9teen_last_order", order);
+	void writeSharedValue("9teen_last_order", order);
+}
+
+export async function getAdminLockoutState(): Promise<{ timestamp: number; attempts: number } | null> {
+	if (!isBrowser()) return null;
+	try {
+		const stored = await readSharedValue(ADMIN_STORAGE_KEY);
+		return stored && typeof stored === "object" && "timestamp" in stored && "attempts" in stored
+			? (stored as { timestamp: number; attempts: number })
+			: null;
+	} catch {
+		return null;
+	}
+}
+
+export async function saveAdminLockoutState(state: { timestamp: number; attempts: number } | null) {
+	if (!isBrowser()) return;
+	writeCachedValue(ADMIN_STORAGE_KEY, state);
+	await writeSharedValue(ADMIN_STORAGE_KEY, state);
+	notifyDataChanged();
+}
+
+export async function clearAdminLockoutState() {
+	if (!isBrowser()) return;
+	clearCachedValue(ADMIN_STORAGE_KEY);
+	await clearSharedValue(ADMIN_STORAGE_KEY);
+	notifyDataChanged();
+}
+
 export function resetProducts() {
 	clearCachedValue(PRODUCT_STORAGE_KEY);
 	void writeSharedValue(PRODUCT_STORAGE_KEY, null);
@@ -493,8 +497,8 @@ export function saveOrder(order: Order) {
 	const arr = getOrders();
 	arr.unshift(order);
 	saveOrders(arr);
-	writeCachedValue("9teen_last_order", order);
-	void writeSharedValue("9teen_last_order", order);
+	saveLastOrder(order);
+	notifyDataChanged();
 }
 
 export function formatWhatsappMessage(settings: SiteSettings, order: Order) {

@@ -300,26 +300,7 @@ export default function AdminSettingsPage() {
             <h1 className="text-3xl font-black mt-3">Website Editor</h1>
             <p className="text-sm text-white/70 mt-2">Edit the homepage hero, WhatsApp order template, and store branding.</p>
           </div>
-          <button onClick={async () => { handleSave();
-              try {
-                const rawProducts = localStorage.getItem('9teen_products');
-                const products = rawProducts ? JSON.parse(rawProducts) : [];
-                if (products.length) await postProducts(products);
-              } catch {}
-              try {
-                const rawOrders = localStorage.getItem('9teen_orders');
-                const orders = rawOrders ? JSON.parse(rawOrders) : [];
-                if (orders.length) await postOrders(orders);
-              } catch {}
-              try {
-                const rawUsers = localStorage.getItem('9teen_user_accounts');
-                const users = rawUsers ? JSON.parse(rawUsers) : [];
-                if (users.length) {
-                  const payload = users.map((u:any) => ({ id: u.id, name: u.name, email: u.email }));
-                  await postUsers(payload);
-                }
-              } catch {}
-            }} className="inline-flex items-center gap-2 rounded-full bg-red-500 px-4 py-2 text-sm font-semibold text-white hover:bg-red-400 transition">
+          <button onClick={async () => { handleSave(); }} className="inline-flex items-center gap-2 rounded-full bg-red-500 px-4 py-2 text-sm font-semibold text-white hover:bg-red-400 transition">
             <Save className="w-4 h-4" /> Save Settings
           </button>
         </div>

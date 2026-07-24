@@ -50,7 +50,6 @@ export default function CheckoutPage() {
       createdAt: new Date().toISOString(),
     };
     saveOrder(order);
-    localStorage.setItem("9teen_last_order", JSON.stringify(order));
 
     if (settings.notificationEmail && form.email) {
       const emailSubject = formatEmailSubject(settings, order);

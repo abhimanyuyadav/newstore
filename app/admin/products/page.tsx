@@ -313,32 +313,11 @@ export default function AdminProductsPage() {
               <PlusCircle className="w-4 h-4" /> Add Demo Product
             </button>
             <button type="button" disabled={!isReady} onClick={async () => {
-                // Save locally first
                 saveProducts(products);
                 setSaved(true);
-
-                // Also migrate to Supabase: products, orders, users
-                try {
-                  await postProducts(products);
-                } catch {}
-
-                try {
-                  const rawOrders = localStorage.getItem('9teen_orders');
-                  const orders = rawOrders ? JSON.parse(rawOrders) : [];
-                  if (orders.length) await postOrders(orders);
-                } catch {}
-
-                try {
-                  const rawUsers = localStorage.getItem('9teen_user_accounts');
-                  const users = rawUsers ? JSON.parse(rawUsers) : [];
-                  if (users.length) {
-                    const payload = users.map((u:any) => ({ id: u.id, name: u.name, email: u.email, phone: u.phone, address: u.address, city: u.city }));
-                    await postUsers(payload);
-                  }
-                } catch {}
               }}
               className="inline-flex items-center gap-2 rounded-full bg-red-500 px-4 py-2 text-sm font-semibold text-white hover:bg-red-400 transition disabled:opacity-50 disabled:cursor-not-allowed">
-              <Save className="w-4 h-4" /> Save & Migrate
+              <Save className="w-4 h-4" /> Save Products
             </button>
           </div>
         </div>

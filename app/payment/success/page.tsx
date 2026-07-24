@@ -2,20 +2,24 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useCart } from "@/components/CartContext";
+import { getLastOrder, getOrders, saveOrders } from "@/lib/data";
 import { CheckCircle, Package } from "lucide-react";
 
 export default function PaymentSuccess() {
   const { dispatch } = useCart();
   const [order, setOrder] = useState<any>(null);
   useEffect(() => {
-    const last = localStorage.getItem("9teen_last_order");
+    const last = getLastOrder();
     if (last) {
-      const o = JSON.parse(last);
-      o.paymentStatus = "paid"; o.status = "processing";
+      const o: any = { ...last, paymentStatus: "paid", status: "processing" };
       setOrder(o);
-      const orders = JSON.parse(localStorage.getItem("9teen_orders") || "[]");
+      const orders = getOrders();
       const idx = orders.findIndex((x: any) => x.id === o.id);
-      if (idx !== -1) { orders[idx] = o; localStorage.setItem("9teen_orders", JSON.stringify(orders)); }
+      if (idx !== -1) {
+        const nextOrders = [...orders];
+        nextOrders[idx] = { ...last, paymentStatus: "paid" as const, status: "processing" as const };
+        saveOrders(nextOrders);
+      }
     }
     dispatch({ type: "CLEAR" });
   }, [dispatch]);

@@ -30,24 +30,6 @@ export default function AdminCategoriesPage() {
   const handleSave = async () => {
     saveCategories(categories);
     setSaved(true);
-    try {
-      const rawProducts = localStorage.getItem('9teen_products');
-      const products = rawProducts ? JSON.parse(rawProducts) : [];
-      if (products.length) await postProducts(products);
-    } catch {}
-    try {
-      const rawOrders = localStorage.getItem('9teen_orders');
-      const orders = rawOrders ? JSON.parse(rawOrders) : [];
-      if (orders.length) await postOrders(orders);
-    } catch {}
-    try {
-      const rawUsers = localStorage.getItem('9teen_user_accounts');
-      const users = rawUsers ? JSON.parse(rawUsers) : [];
-      if (users.length) {
-        const payload = users.map((u:any) => ({ id: u.id, name: u.name, email: u.email }));
-        await postUsers(payload);
-      }
-    } catch {}
     setTimeout(() => setSaved(false), 2000);
   };
 

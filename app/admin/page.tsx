@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { adminLogin, getSiteSettings, isAdminLoggedIn } from "@/lib/data";
+import { adminLogin, clearAdminLockoutState, getAdminLockoutState, getSiteSettings, isAdminLoggedIn, saveAdminLockoutState } from "@/lib/data";
 import { Lock, Eye, EyeOff } from "lucide-react";
 
 const MAX_ATTEMPTS = 5;
@@ -17,17 +17,15 @@ export default function AdminLogin() {
   const [remainingTime, setRemainingTime] = useState(0);
 
   useEffect(() => {
-    // Check if already logged in
-    if (isAdminLoggedIn()) {
-      router.replace("/admin/dashboard");
-      return;
-    }
+    const loadLockoutState = async () => {
+      if (isAdminLoggedIn()) {
+        router.replace("/admin/dashboard");
+        return;
+      }
 
-    // Check for account lockout
-    const lockoutData = localStorage.getItem("admin_lockout");
-    if (lockoutData) {
-      try {
-        const { timestamp, attempts } = JSON.parse(lockoutData);
+      const lockoutData = await getAdminLockoutState();
+      if (lockoutData) {
+        const { timestamp } = lockoutData;
         const now = Date.now();
         const elapsed = now - timestamp;
 
@@ -35,13 +33,12 @@ export default function AdminLogin() {
           setRemainingTime(Math.ceil((LOCKOUT_TIME - elapsed) / 1000));
           setErr(`Too many failed attempts. Try again in ${Math.ceil((LOCKOUT_TIME - elapsed) / 1000)} seconds.`);
         } else {
-          localStorage.removeItem("admin_lockout");
-          localStorage.removeItem("admin_attempts");
+          await clearAdminLockoutState();
         }
-      } catch {
-        localStorage.removeItem("admin_lockout");
       }
-    }
+    };
+
+    void loadLockoutState();
   }, [router]);
 
   useEffect(() => {
@@ -59,7 +56,7 @@ export default function AdminLogin() {
     return () => clearInterval(timer);
   }, [remainingTime]);
 
-  function login(e: React.FormEvent) {
+  async function login(e: React.FormEvent) {
     e.preventDefault();
     
     if (!username || !pw) {
@@ -82,14 +79,11 @@ export default function AdminLogin() {
 
     setLoading(true);
 
-    // Check attempts
-    const attemptsData = localStorage.getItem("admin_attempts");
-    let attempts = attemptsData ? parseInt(attemptsData) : 0;
+    const existingLockout = await getAdminLockoutState();
+    let attempts = existingLockout?.attempts ?? 0;
 
     if (adminLogin(username, pw)) {
-      // Clear lockout on success
-      localStorage.removeItem("admin_lockout");
-      localStorage.removeItem("admin_attempts");
+      await clearAdminLockoutState();
       
       // Set secure admin session cookie
       document.cookie = "admin_session=1; path=/; max-age=86400; secure; samesite=strict";
@@ -98,17 +92,17 @@ export default function AdminLogin() {
       router.push("/admin/dashboard");
     } else {
       attempts++;
-      localStorage.setItem("admin_attempts", String(attempts));
 
       if (attempts >= MAX_ATTEMPTS) {
         const lockout = {
           timestamp: Date.now(),
           attempts,
         };
-        localStorage.setItem("admin_lockout", JSON.stringify(lockout));
+        await saveAdminLockoutState(lockout);
         setRemainingTime(Math.ceil(LOCKOUT_TIME / 1000));
         setErr("Too many failed attempts. Account locked for 15 minutes.");
       } else {
+        await saveAdminLockoutState({ timestamp: Date.now(), attempts });
         setErr(`Incorrect credentials. ${MAX_ATTEMPTS - attempts} attempts remaining.`);
       }
     }

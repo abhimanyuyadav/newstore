@@ -1,6 +1,7 @@
 "use client";
 import React, { createContext, useContext, useReducer, useEffect } from "react";
 import { CartItem } from "@/lib/types";
+import { readSharedValue, writeSharedValue } from "@/lib/convexStore";
 
 type State = { items: CartItem[] };
 type Action =
@@ -11,7 +12,6 @@ type Action =
 	| { type: "INIT"; items: CartItem[] };
 
 const CART_STORAGE_KEY = "9teen_cart";
-const LEGACY_CART_STORAGE_KEY = "19teen_cart";
 const initialState: State = { items: [] };
 
 function sameVariantSelections(a?: Record<string, string>, b?: Record<string, string>) {
@@ -60,19 +60,11 @@ function calcTotals(items: CartItem[]) {
 	return { total, count };
 }
 
-function readStoredCartItems(): CartItem[] {
+async function readStoredCartItems(): Promise<CartItem[]> {
 	try {
-		const raw = localStorage.getItem(CART_STORAGE_KEY);
-		if (raw) {
-			return JSON.parse(raw) as CartItem[];
-		}
-
-		const legacyRaw = localStorage.getItem(LEGACY_CART_STORAGE_KEY);
-		if (legacyRaw) {
-			const items = JSON.parse(legacyRaw) as CartItem[];
-			localStorage.setItem(CART_STORAGE_KEY, legacyRaw);
-			localStorage.removeItem(LEGACY_CART_STORAGE_KEY);
-			return items;
+		const raw = await readSharedValue(CART_STORAGE_KEY);
+		if (Array.isArray(raw)) {
+			return raw as CartItem[];
 		}
 	} catch {
 		// ignore invalid storage data
@@ -84,11 +76,7 @@ function readStoredCartItems(): CartItem[] {
 async function persistCartToSharedStorage(items: CartItem[]) {
 	if (typeof window === "undefined") return;
 	try {
-		await fetch("/api/storage", {
-			method: "POST",
-			headers: { "Content-Type": "application/json" },
-			body: JSON.stringify({ key: CART_STORAGE_KEY, value: items }),
-		});
+		await writeSharedValue(CART_STORAGE_KEY, items);
 	} catch {
 		// ignore sync failures
 	}
@@ -98,17 +86,18 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 	const [state, dispatch] = useReducer(reducer, initialState);
 
 	useEffect(() => {
-		const items = readStoredCartItems();
-		if (items.length > 0 || localStorage.getItem(CART_STORAGE_KEY) !== null || localStorage.getItem(LEGACY_CART_STORAGE_KEY) !== null) {
-			dispatch({ type: "INIT", items });
-		}
+		let mounted = true;
+		void readStoredCartItems().then((items) => {
+			if (mounted) {
+				dispatch({ type: "INIT", items });
+			}
+		});
+		return () => {
+			mounted = false;
+		};
 	}, []);
 
 	useEffect(() => {
-		try {
-			localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(state.items));
-			localStorage.removeItem(LEGACY_CART_STORAGE_KEY);
-		} catch {}
 		void persistCartToSharedStorage(state.items);
 	}, [state.items]);
 

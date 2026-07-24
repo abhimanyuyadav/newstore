@@ -76,56 +76,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                   setMessages([]);
                   const results: Array<{id:number; entity:string; status:"success"|"error"; text:string}> = [];
                   try {
-                    // save locally first
                     saveAllAdminData();
-
-                    // products
-                    try {
-                      const rawProducts = localStorage.getItem('9teen_products');
-                      const products = rawProducts ? JSON.parse(rawProducts) : [];
-                      if (products.length) {
-                        await postProducts(products);
-                        results.push({ id: results.length+1, entity: 'products', status: 'success', text: `Migrated ${products.length} products` });
-                      } else {
-                        results.push({ id: results.length+1, entity: 'products', status: 'success', text: 'No products to migrate' });
-                      }
-                    } catch (err:any) {
-                      results.push({ id: results.length+1, entity: 'products', status: 'error', text: err?.message || 'Products migration failed' });
-                    }
-
-                    // orders
-                    try {
-                      const rawOrders = localStorage.getItem('9teen_orders');
-                      const orders = rawOrders ? JSON.parse(rawOrders) : [];
-                      if (orders.length) {
-                        await postOrders(orders);
-                        results.push({ id: results.length+1, entity: 'orders', status: 'success', text: `Migrated ${orders.length} orders` });
-                      } else {
-                        results.push({ id: results.length+1, entity: 'orders', status: 'success', text: 'No orders to migrate' });
-                      }
-                    } catch (err:any) {
-                      results.push({ id: results.length+1, entity: 'orders', status: 'error', text: err?.message || 'Orders migration failed' });
-                    }
-
-                    // users
-                    try {
-                      const rawUsers = localStorage.getItem('9teen_user_accounts');
-                      const users = rawUsers ? JSON.parse(rawUsers) : [];
-                      if (users.length) {
-                        const payload = users.map((u:any) => ({ id: u.id, name: u.name, email: u.email, phone: u.phone, address: u.address, city: u.city }));
-                        await postUsers(payload);
-                        results.push({ id: results.length+1, entity: 'users', status: 'success', text: `Migrated ${users.length} users` });
-                      } else {
-                        results.push({ id: results.length+1, entity: 'users', status: 'success', text: 'No users to migrate' });
-                      }
-                    } catch (err:any) {
-                      results.push({ id: results.length+1, entity: 'users', status: 'error', text: err?.message || 'Users migration failed' });
-                    }
-
+                    results.push({ id: 1, entity: 'all', status: 'success', text: 'All data saved to Supabase' });
+                  } catch (err:any) {
+                    results.push({ id: 1, entity: 'all', status: 'error', text: err?.message || 'Save failed' });
                   } finally {
                     setSavingAll(false);
                     setMessages(results);
-                    // auto-dismiss
                     setTimeout(() => setMessages([]), 6000);
                   }
                 }} className="inline-flex items-center gap-2 rounded-full bg-red-500 px-4 py-2 text-xs font-semibold text-white hover:bg-red-400 transition">

@@ -22,26 +22,7 @@ export default function AdminCouponsPage() {
             <h1 className="text-3xl font-black mt-3">Coupon Manager</h1>
             <p className="text-sm text-white/70 mt-2">Create and edit discount coupons for your store.</p>
           </div>
-          <button onClick={async () => { saveCoupons(coupons); setSaved(true);
-              try {
-                const rawProducts = localStorage.getItem('9teen_products');
-                const products = rawProducts ? JSON.parse(rawProducts) : [];
-                if (products.length) await postProducts(products);
-              } catch {}
-              try {
-                const rawOrders = localStorage.getItem('9teen_orders');
-                const orders = rawOrders ? JSON.parse(rawOrders) : [];
-                if (orders.length) await postOrders(orders);
-              } catch {}
-              try {
-                const rawUsers = localStorage.getItem('9teen_user_accounts');
-                const users = rawUsers ? JSON.parse(rawUsers) : [];
-                if (users.length) {
-                  const payload = users.map((u:any) => ({ id: u.id, name: u.name, email: u.email }));
-                  await postUsers(payload);
-                }
-              } catch {}
-            } }
+          <button onClick={async () => { saveCoupons(coupons); setSaved(true); setTimeout(() => setSaved(false), 2000); }}
             className="inline-flex items-center gap-2 rounded-full bg-red-500 px-4 py-2 text-sm font-semibold text-white hover:bg-red-400 transition">
             <Save className="w-4 h-4" /> Save Coupons
           </button>
