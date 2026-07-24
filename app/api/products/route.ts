@@ -31,7 +31,7 @@ export async function POST(req: Request) {
     const rows = Array.isArray(body) ? body : [body];
     const { data, error } = await supabase.from('products').upsert(rows);
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-    return NextResponse.json({ inserted: data?.length ?? 0 });
+    return NextResponse.json({ inserted: (data as any)?.length ?? 0 });
   } catch (err) {
     return NextResponse.json({ error: 'Failed to save products' }, { status: 500 });
   }

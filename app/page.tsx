@@ -230,7 +230,6 @@ export default function HomePage() {
                 <div className="flex flex-wrap gap-3">
                   <Link href="/products" className="inline-flex items-center justify-center rounded-full border border-white bg-white px-8 py-3 text-sm font-semibold text-black transition">{settings.heroButtonLabel}</Link>
                   <Link href="/products" className="inline-flex items-center justify-center rounded-full border border-white/80 bg-white/10 px-8 py-3 text-sm font-semibold text-white transition">{settings.heroExploreButtonLabel}</Link>
-                  <Link href="/admin" className="inline-flex items-center justify-center rounded-full border border-white/80 bg-white/10 px-6 py-3 text-sm font-semibold text-white transition">Admin Panel</Link>
                 </div>
               </div>
 

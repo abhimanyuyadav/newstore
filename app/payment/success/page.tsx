@@ -8,14 +8,14 @@ export default function PaymentSuccess() {
   const { dispatch } = useCart();
   const [order, setOrder] = useState<any>(null);
   useEffect(() => {
-    const last = localStorage.getItem("19teen_last_order");
+    const last = localStorage.getItem("9teen_last_order");
     if (last) {
       const o = JSON.parse(last);
       o.paymentStatus = "paid"; o.status = "processing";
       setOrder(o);
-      const orders = JSON.parse(localStorage.getItem("19teen_orders") || "[]");
+      const orders = JSON.parse(localStorage.getItem("9teen_orders") || "[]");
       const idx = orders.findIndex((x: any) => x.id === o.id);
-      if (idx !== -1) { orders[idx] = o; localStorage.setItem("19teen_orders", JSON.stringify(orders)); }
+      if (idx !== -1) { orders[idx] = o; localStorage.setItem("9teen_orders", JSON.stringify(orders)); }
     }
     dispatch({ type: "CLEAR" });
   }, [dispatch]);
@@ -25,7 +25,7 @@ export default function PaymentSuccess() {
       <div className="bg-white rounded-2xl p-8 max-w-md w-full text-center shadow-lg">
         <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4"><CheckCircle className="w-8 h-8 text-green-500" /></div>
         <h1 className="text-2xl font-bold text-green-600 mb-2">Payment Successful!</h1>
-        <p className="text-gray-500 text-sm mb-5">Your 19TEEN order has been confirmed.</p>
+        <p className="text-gray-500 text-sm mb-5">Your 9TEEN order has been confirmed.</p>
         {order && <div className="bg-gray-50 rounded-xl p-4 mb-5">
           <p className="text-xs text-gray-400 mb-1">Order ID</p>
           <p className="font-mono font-bold text-sm">{order.id}</p>

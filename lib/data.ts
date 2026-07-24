@@ -1,15 +1,17 @@
 
 import { Product, Order, Category, SiteSettings, Coupon, Review, UserAccount } from "./types";
 
-const PRODUCT_STORAGE_KEY = "19teen_products";
-const CATEGORIES_STORAGE_KEY = "19teen_categories";
-const SITE_SETTINGS_KEY = "19teen_site_settings";
-const COUPON_STORAGE_KEY = "19teen_coupons";
-const REVIEW_STORAGE_KEY = "19teen_reviews";
-const WISHLIST_STORAGE_KEY = "19teen_wishlist";
+const PRODUCT_STORAGE_KEY = "9teen_products";
+const CATEGORIES_STORAGE_KEY = "9teen_categories";
+const SITE_SETTINGS_KEY = "9teen_site_settings";
+const COUPON_STORAGE_KEY = "9teen_coupons";
+const REVIEW_STORAGE_KEY = "9teen_reviews";
+const WISHLIST_STORAGE_KEY = "9teen_wishlist";
 const USER_ACCOUNTS_KEY = "9teen_user_accounts";
 const USER_SESSION_KEY = "9teen_user_session";
-export const DATA_CHANGED_EVENT = "19teen-data-changed";
+const ADMIN_STORAGE_KEY = "9teen_admin";
+const LEGACY_ADMIN_STORAGE_KEY = "19teen_admin";
+export const DATA_CHANGED_EVENT = "9teen-data-changed";
 
 const SHARED_STORAGE_KEYS = [
 	PRODUCT_STORAGE_KEY,
@@ -20,17 +22,34 @@ const SHARED_STORAGE_KEYS = [
 	WISHLIST_STORAGE_KEY,
 	USER_ACCOUNTS_KEY,
 	USER_SESSION_KEY,
-	"19teen_orders",
-	"19teen_last_order",
-	"19teen_cart",
+	"9teen_orders",
+	"9teen_last_order",
+	"9teen_cart",
 ];
 
 let sharedHydrationPromise: Promise<void> | null = null;
 
+function migrateLegacyStorageKeys() {
+	if (typeof window === "undefined") return;
+
+	try {
+		const legacyAdminValue = localStorage.getItem(LEGACY_ADMIN_STORAGE_KEY);
+		if (legacyAdminValue && !localStorage.getItem(ADMIN_STORAGE_KEY)) {
+			localStorage.setItem(ADMIN_STORAGE_KEY, legacyAdminValue);
+		}
+		if (localStorage.getItem(ADMIN_STORAGE_KEY)) {
+			localStorage.removeItem(LEGACY_ADMIN_STORAGE_KEY);
+		}
+	} catch {}
+}
+
 function notifyDataChanged() {
 	if (typeof window !== "undefined") {
 		window.dispatchEvent(new CustomEvent(DATA_CHANGED_EVENT));
-		void refreshFromSharedStorage();
+		// Schedule refresh with small delay to avoid race conditions
+		setTimeout(() => {
+			void refreshFromSharedStorage();
+		}, 100);
 	}
 }
 
@@ -39,14 +58,26 @@ async function refreshFromSharedStorage() {
 	if (sharedHydrationPromise) return sharedHydrationPromise;
 
 	sharedHydrationPromise = (async () => {
-		for (const key of SHARED_STORAGE_KEYS) {
-			try {
-				const res = await fetch(`/api/storage?key=${encodeURIComponent(key)}`);
-				if (!res.ok) continue;
-				const value = await res.json();
-				if (value === null || value === undefined) continue;
-				localStorage.setItem(key, JSON.stringify(value));
-			} catch {}
+		try {
+			const res = await fetch(`/api/storage`);
+			if (!res.ok) {
+				console.warn("Failed to fetch shared storage");
+				return;
+			}
+			const store = await res.json() as Record<string, unknown>;
+			
+			// Update localStorage with all keys from storage
+			for (const [key, value] of Object.entries(store)) {
+				if (value !== null && value !== undefined) {
+					try {
+						localStorage.setItem(key, JSON.stringify(value));
+					} catch (error) {
+						console.warn(`Failed to set localStorage key ${key}:`, error);
+					}
+				}
+			}
+		} catch (error) {
+			console.warn("Error refreshing from shared storage:", error);
 		}
 	})().finally(() => {
 		sharedHydrationPromise = null;
@@ -56,24 +87,27 @@ async function refreshFromSharedStorage() {
 }
 
 async function writeSharedValue(key: string, value: unknown) {
-	if (typeof window === "undefined") {
-		try {
-			await fetch('/api/storage', {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({ key, value }),
-			});
-		} catch {}
-		return;
-	}
+	if (typeof window === "undefined") return; // Only run on client
 
 	try {
-		await fetch('/api/storage', {
+		const response = await fetch('/api/storage', {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/json' },
 			body: JSON.stringify({ key, value }),
 		});
-	} catch {}
+		
+		if (!response.ok) {
+			const errorData = await response.json().catch(() => ({}));
+			console.warn(`Failed to save ${key} to storage:`, errorData);
+			return false;
+		}
+		
+		return true;
+	} catch (error) {
+		console.warn(`Error writing shared value for ${key}:`, error);
+		// Still fail gracefully - data is in localStorage
+		return false;
+	}
 }
 
 function getLocalValue<T>(key: string, fallback: T): T {
@@ -92,6 +126,7 @@ function setLocalValue(key: string, value: unknown) {
 }
 
 if (typeof window !== "undefined") {
+	migrateLegacyStorageKeys();
 	void refreshFromSharedStorage();
 }
 
@@ -174,9 +209,9 @@ export const defaultSiteSettings: SiteSettings = {
 	whatsappMessage: "Hi, I just placed an order from 9TEEN. Order ID: {orderId}, Total: NPR {total}. Please confirm the details.",
 	notificationEmail: "info@9teen.com",
 	emailSubject: "Your 9TEEN Order {orderId}",
-	emailBody: "Hello {name},\n\nThanks for shopping with {siteName}. Your order #{orderId} is confirmed. Total: NPR {total}.\n\nDelivery address:\n{address}, {city}\n\nWe’ll notify you once your items ship.\n\nCheers,\n{siteName} Team",
+	emailBody: "Hello {name},\n\nThanks for shopping with {siteName}. Your order #{orderId} is confirmed. Total: NPR {total}.\n\nDelivery address:\n{address}, {city}\n\nWe'll notify you once your items ship.\n\nCheers,\n{siteName} Team",
 	adminUsername: "admin",
-	adminPassword: "9teen12@",
+	adminPassword: "9Teen12@",
 	footerContactEmail: "info@9teen.com",
 	footerContactPhone: "+977 9800000000",
 	footerContactLocation: "Kathmandu, Nepal",
@@ -265,8 +300,43 @@ export function saveUserAccounts(accounts: UserAccount[]) {
 	} catch {}
 }
 
+// Simple hash function for demo (NOT for production - use bcrypt in real app)
+function simpleHash(str: string): string {
+	let hash = 0;
+	for (let i = 0; i < str.length; i++) {
+		const char = str.charCodeAt(i);
+		hash = ((hash << 5) - hash) + char;
+		hash = hash & hash; // Convert to 32bit integer
+	}
+	return Math.abs(hash).toString(16);
+}
+
+function validatePassword(password: string): { valid: boolean; errors: string[] } {
+	const errors: string[] = [];
+	if (password.length < 8) errors.push("Password must be at least 8 characters");
+	if (!/[A-Z]/.test(password)) errors.push("Password must contain uppercase letter");
+	if (!/[0-9]/.test(password)) errors.push("Password must contain number");
+	if (!/[!@#$%^&*]/.test(password)) errors.push("Password must contain special character");
+	return { valid: errors.length === 0, errors };
+}
+
+function validateEmail(email: string): boolean {
+	const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+	return emailRegex.test(email) && email.length <= 254;
+}
+
 export function registerUser(input: { name: string; email: string; phone: string; password: string; address: string; city: string }) {
 	try {
+		// Validate inputs
+		if (!input.name || input.name.length < 2 || input.name.length > 100) return null;
+		if (!validateEmail(input.email)) return null;
+		if (!input.phone || input.phone.length < 10 || input.phone.length > 20) return null;
+		if (input.address.length > 500) return null;
+		if (input.city.length > 100) return null;
+
+		const passwordValidation = validatePassword(input.password);
+		if (!passwordValidation.valid) return null;
+
 		const accounts = getUserAccounts();
 		const emailExists = accounts.some(account => account.email.toLowerCase() === input.email.toLowerCase());
 		if (emailExists) return null;
@@ -276,7 +346,7 @@ export function registerUser(input: { name: string; email: string; phone: string
 			name: input.name.trim(),
 			email: input.email.trim().toLowerCase(),
 			phone: input.phone.trim(),
-			password: input.password,
+			password: simpleHash(input.password),
 			address: input.address.trim(),
 			city: input.city.trim(),
 			createdAt: new Date().toISOString(),
@@ -284,7 +354,8 @@ export function registerUser(input: { name: string; email: string; phone: string
 
 		accounts.push(newAccount);
 		saveUserAccounts(accounts);
-		localStorage.setItem(USER_SESSION_KEY, JSON.stringify(newAccount));
+		setLocalValue(USER_SESSION_KEY, newAccount);
+		void writeSharedValue(USER_SESSION_KEY, newAccount);
 		notifyDataChanged();
 		return newAccount;
 	} catch {
@@ -294,10 +365,17 @@ export function registerUser(input: { name: string; email: string; phone: string
 
 export function loginUser(email: string, password: string) {
 	try {
+		// Validate inputs
+		if (!validateEmail(email) || !password || password.length < 1) return null;
+
 		const accounts = getUserAccounts();
-		const account = accounts.find(item => item.email.toLowerCase() === email.trim().toLowerCase() && item.password === password);
+		const account = accounts.find(item => item.email.toLowerCase() === email.trim().toLowerCase() && item.password === simpleHash(password));
 		if (!account) return null;
-		localStorage.setItem(USER_SESSION_KEY, JSON.stringify(account));
+
+		// Create session with timestamp for expiry validation
+		const sessionData = { ...account, sessionCreated: Date.now() };
+		setLocalValue(USER_SESSION_KEY, sessionData);
+		void writeSharedValue(USER_SESSION_KEY, sessionData);
 		notifyDataChanged();
 		return account;
 	} catch {
@@ -325,6 +403,7 @@ export function isUserLoggedIn() {
 export function logoutUser() {
 	try {
 		localStorage.removeItem(USER_SESSION_KEY);
+		void writeSharedValue(USER_SESSION_KEY, null);
 		notifyDataChanged();
 	} catch {}
 }
@@ -339,12 +418,12 @@ export function saveAllAdminData() {
 		saveOrders(getOrders());
 		saveUserAccounts(getUserAccounts());
 		saveWishlist(getWishlist());
-		const cart = getLocalValue("19teen_cart", []);
-		setLocalValue("19teen_cart", cart);
-		void writeSharedValue("19teen_cart", cart);
-		const lastOrder = getLocalValue("19teen_last_order", null);
-		setLocalValue("19teen_last_order", lastOrder);
-		void writeSharedValue("19teen_last_order", lastOrder);
+		const cart = getLocalValue("9teen_cart", []);
+		setLocalValue("9teen_cart", cart);
+		void writeSharedValue("9teen_cart", cart);
+		const lastOrder = getLocalValue("9teen_last_order", null);
+		setLocalValue("9teen_last_order", lastOrder);
+		void writeSharedValue("9teen_last_order", lastOrder);
 		const session = getCurrentUser();
 		if (session) {
 			setLocalValue(USER_SESSION_KEY, session);
@@ -355,31 +434,58 @@ export function saveAllAdminData() {
 }
 
 export function resetProducts() {
-	try { localStorage.removeItem(PRODUCT_STORAGE_KEY); notifyDataChanged(); } catch {}
+	try { 
+		localStorage.removeItem(PRODUCT_STORAGE_KEY);
+		void writeSharedValue(PRODUCT_STORAGE_KEY, null);
+		notifyDataChanged(); 
+	} catch {}
 }
 
 export function resetCategories() {
-	try { localStorage.removeItem("19teen_categories"); notifyDataChanged(); } catch {}
+	try { 
+		localStorage.removeItem(CATEGORIES_STORAGE_KEY);
+		void writeSharedValue(CATEGORIES_STORAGE_KEY, null);
+		notifyDataChanged(); 
+	} catch {}
 }
 
 export function resetSiteSettings() {
-	try { localStorage.removeItem(SITE_SETTINGS_KEY); notifyDataChanged(); } catch {}
+	try { 
+		localStorage.removeItem(SITE_SETTINGS_KEY);
+		void writeSharedValue(SITE_SETTINGS_KEY, null);
+		notifyDataChanged(); 
+	} catch {}
 }
 
 export function resetOrders() {
-	try { localStorage.removeItem("19teen_orders"); localStorage.removeItem("19teen_last_order"); notifyDataChanged(); } catch {}
+	try { 
+		localStorage.removeItem("9teen_orders");
+		localStorage.removeItem("9teen_last_order");
+		void writeSharedValue("9teen_orders", null);
+		void writeSharedValue("9teen_last_order", null);
+		notifyDataChanged(); 
+	} catch {}
 }
 
 export function resetAllData() {
 	try {
-		localStorage.removeItem(PRODUCT_STORAGE_KEY);
-		localStorage.removeItem("19teen_categories");
-		localStorage.removeItem(SITE_SETTINGS_KEY);
-		localStorage.removeItem("19teen_orders");
-		localStorage.removeItem("19teen_last_order");
-		localStorage.removeItem(COUPON_STORAGE_KEY);
-		localStorage.removeItem(REVIEW_STORAGE_KEY);
-		localStorage.removeItem("19teen_cart");
+		const keysToDelete = [
+			PRODUCT_STORAGE_KEY,
+			CATEGORIES_STORAGE_KEY,
+			SITE_SETTINGS_KEY,
+			"9teen_orders",
+			"9teen_last_order",
+			COUPON_STORAGE_KEY,
+			REVIEW_STORAGE_KEY,
+			WISHLIST_STORAGE_KEY,
+			USER_ACCOUNTS_KEY,
+			USER_SESSION_KEY,
+			"9teen_cart"
+		];
+		keysToDelete.forEach(key => {
+			localStorage.removeItem(key);
+			void writeSharedValue(key, null);
+		});
 		notifyDataChanged();
 	} catch {}
 }
@@ -442,22 +548,23 @@ export function addReview(review: Review) {
 	try {
 		const reviews = getReviews();
 		reviews.unshift(review);
-		localStorage.setItem(REVIEW_STORAGE_KEY, JSON.stringify(reviews));
+		setLocalValue(REVIEW_STORAGE_KEY, reviews);
+		void writeSharedValue(REVIEW_STORAGE_KEY, reviews);
 		notifyDataChanged();
 	} catch {}
 }
 
 export function saveOrders(orders: Order[]) {
 	try {
-		setLocalValue("19teen_orders", orders);
-		void writeSharedValue("19teen_orders", orders);
+		setLocalValue("9teen_orders", orders);
+		void writeSharedValue("9teen_orders", orders);
 		notifyDataChanged();
 	} catch {}
 }
 
 export function saveOrder(order: Order) {
 	try {
-		const raw = localStorage.getItem("19teen_orders");
+		const raw = localStorage.getItem("9teen_orders");
 		const arr: Order[] = raw ? JSON.parse(raw) : [];
 		arr.unshift(order);
 		saveOrders(arr);
@@ -504,23 +611,63 @@ export function buildWhatsappLink(number: string, message: string) {
 
 export function getOrders(): Order[] {
 	try {
-		const raw = localStorage.getItem("19teen_orders");
+		const raw = localStorage.getItem("9teen_orders");
 		return raw ? JSON.parse(raw) : [];
 	} catch { return []; }
 }
 
 export function adminLogin(username: string, pw: string) {
 	try {
+		// Validate inputs
+		if (!username || !pw || username.length < 1 || pw.length < 1) return false;
+
 		const settings = getSiteSettings();
+		// Check if admin credentials are configured
+		if (!settings.adminUsername || !settings.adminPassword) {
+			console.warn("Admin credentials not configured");
+			return false;
+		}
+
 		if (username === settings.adminUsername && pw === settings.adminPassword) {
-			localStorage.setItem("19teen_admin", "1");
+			// Store session with timestamp
+			localStorage.setItem(ADMIN_STORAGE_KEY, JSON.stringify({ authenticated: true, timestamp: Date.now() }));
+			localStorage.removeItem(LEGACY_ADMIN_STORAGE_KEY);
 			return true;
 		}
-	} catch {}
+	} catch (error) {
+		console.warn("Admin login error");
+	}
 	return false;
 }
 
-export function isAdminLoggedIn() { try { return localStorage.getItem("19teen_admin") === "1"; } catch { return false; } }
-export function adminLogout() { try { localStorage.removeItem("19teen_admin"); } catch {} }
+export function isAdminLoggedIn() {
+	try {
+		const token = localStorage.getItem(ADMIN_STORAGE_KEY);
+		if (!token) return localStorage.getItem(LEGACY_ADMIN_STORAGE_KEY) === "1";
+
+		try {
+			const parsed = JSON.parse(token);
+			// Check if session is still valid (24 hours)
+			const sessionTimeout = 24 * 60 * 60 * 1000;
+			const isExpired = Date.now() - parsed.timestamp > sessionTimeout;
+			if (isExpired) {
+				localStorage.removeItem(ADMIN_STORAGE_KEY);
+				return false;
+			}
+			return parsed.authenticated === true;
+		} catch {
+			return false;
+		}
+	} catch {
+		return false;
+	}
+}
+export function adminLogout() {
+	try {
+		localStorage.removeItem(ADMIN_STORAGE_KEY);
+		localStorage.removeItem(LEGACY_ADMIN_STORAGE_KEY);
+		notifyDataChanged();
+	} catch {}
+}
 
 // keep types exported from types.ts for consumers

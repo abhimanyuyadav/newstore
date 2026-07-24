@@ -68,10 +68,10 @@ export default function AdminProductsPage() {
     setIsReady(true);
 
     const handleStorage = (event: StorageEvent) => {
-      if (event.key === "19teen_products") {
+      if (event.key === "9teen_products") {
         setProducts(getProducts());
       }
-      if (event.key === "19teen_categories") {
+      if (event.key === "9teen_categories") {
         setCategories(getCategories());
       }
     };
@@ -323,7 +323,7 @@ export default function AdminProductsPage() {
                 } catch {}
 
                 try {
-                  const rawOrders = localStorage.getItem('19teen_orders');
+                  const rawOrders = localStorage.getItem('9teen_orders');
                   const orders = rawOrders ? JSON.parse(rawOrders) : [];
                   if (orders.length) await postOrders(orders);
                 } catch {}

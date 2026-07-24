@@ -81,7 +81,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
                     // products
                     try {
-                      const rawProducts = localStorage.getItem('19teen_products');
+                      const rawProducts = localStorage.getItem('9teen_products');
                       const products = rawProducts ? JSON.parse(rawProducts) : [];
                       if (products.length) {
                         await postProducts(products);
@@ -95,7 +95,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
                     // orders
                     try {
-                      const rawOrders = localStorage.getItem('19teen_orders');
+                      const rawOrders = localStorage.getItem('9teen_orders');
                       const orders = rawOrders ? JSON.parse(rawOrders) : [];
                       if (orders.length) {
                         await postOrders(orders);

@@ -13,7 +13,7 @@ export default function MigratePage() {
     try {
       // products
       try {
-        const rawProducts = localStorage.getItem('19teen_products');
+        const rawProducts = localStorage.getItem('9teen_products');
         const products = rawProducts ? JSON.parse(rawProducts) : [];
         if (products.length) {
           const res = await postProducts(products);
@@ -24,7 +24,7 @@ export default function MigratePage() {
 
       // orders
       try {
-        const rawOrders = localStorage.getItem('19teen_orders');
+        const rawOrders = localStorage.getItem('9teen_orders');
         const orders = rawOrders ? JSON.parse(rawOrders) : [];
         if (orders.length) {
           const res = await postOrders(orders);
