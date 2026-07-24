@@ -1,0 +1,1 @@
+"use strict";(self.webpackChunk_N_E=self.webpackChunk_N_E||[]).push([[9523],{9523:(e,t,s)=>{s.d(t,{createClient:()=>a});var _=s(188);let c=s(5704).env.NEXT_PUBLIC_SUPABASE_ANON_KEY,a=()=>(0,_.k)("https://wzcztthfrblxyyldkwcn.supabase.co",c)}}]);

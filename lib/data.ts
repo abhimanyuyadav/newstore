@@ -1,5 +1,6 @@
 
 import { Product, Order, Category, SiteSettings, Coupon, Review, UserAccount } from "./types";
+import { deleteSharedValue, readAllSharedValues, readSharedValue, writeSharedValue as writeConvexValue } from "./convexStore";
 
 const PRODUCT_STORAGE_KEY = "9teen_products";
 const CATEGORIES_STORAGE_KEY = "9teen_categories";
@@ -13,72 +14,93 @@ const ADMIN_STORAGE_KEY = "9teen_admin";
 const LEGACY_ADMIN_STORAGE_KEY = "19teen_admin";
 export const DATA_CHANGED_EVENT = "9teen-data-changed";
 
-const SHARED_STORAGE_KEYS = [
-	PRODUCT_STORAGE_KEY,
-	CATEGORIES_STORAGE_KEY,
-	SITE_SETTINGS_KEY,
-	COUPON_STORAGE_KEY,
-	REVIEW_STORAGE_KEY,
-	WISHLIST_STORAGE_KEY,
-	USER_ACCOUNTS_KEY,
-	USER_SESSION_KEY,
-	"9teen_orders",
-	"9teen_last_order",
-	"9teen_cart",
-];
-
+const sharedCache: Record<string, unknown> = {};
 let sharedHydrationPromise: Promise<void> | null = null;
 
+function isBrowser(): boolean {
+	return typeof window !== "undefined";
+}
+
 function migrateLegacyStorageKeys() {
-	if (typeof window === "undefined") return;
+	if (!isBrowser()) return;
 
 	try {
-		const legacyAdminValue = localStorage.getItem(LEGACY_ADMIN_STORAGE_KEY);
-		if (legacyAdminValue && !localStorage.getItem(ADMIN_STORAGE_KEY)) {
-			localStorage.setItem(ADMIN_STORAGE_KEY, legacyAdminValue);
+		const legacyAdminValue = window.localStorage.getItem(LEGACY_ADMIN_STORAGE_KEY);
+		if (legacyAdminValue && !window.localStorage.getItem(ADMIN_STORAGE_KEY)) {
+			window.localStorage.setItem(ADMIN_STORAGE_KEY, legacyAdminValue);
 		}
-		if (localStorage.getItem(ADMIN_STORAGE_KEY)) {
-			localStorage.removeItem(LEGACY_ADMIN_STORAGE_KEY);
+		if (window.localStorage.getItem(ADMIN_STORAGE_KEY)) {
+			window.localStorage.removeItem(LEGACY_ADMIN_STORAGE_KEY);
 		}
 	} catch {}
 }
 
 function notifyDataChanged() {
-	if (typeof window !== "undefined") {
-		window.dispatchEvent(new CustomEvent(DATA_CHANGED_EVENT));
-		// Schedule refresh with small delay to avoid race conditions
-		setTimeout(() => {
-			void refreshFromSharedStorage();
-		}, 100);
+	if (!isBrowser()) return;
+	window.dispatchEvent(new CustomEvent(DATA_CHANGED_EVENT));
+	void refreshFromSharedStorage(true);
+}
+
+function readCachedValue<T>(key: string, fallback: T): T {
+	if (typeof sharedCache[key] !== "undefined") {
+		return sharedCache[key] as T;
+	}
+
+	if (!isBrowser()) {
+		return fallback;
+	}
+
+	try {
+		const raw = window.localStorage.getItem(key);
+		if (!raw) return fallback;
+		const parsed = JSON.parse(raw) as T;
+		sharedCache[key] = parsed;
+		return parsed;
+	} catch {
+		return fallback;
 	}
 }
 
-async function refreshFromSharedStorage() {
-	if (typeof window === "undefined") return;
-	if (sharedHydrationPromise) return sharedHydrationPromise;
+function writeCachedValue(key: string, value: unknown) {
+	sharedCache[key] = value;
+	if (!isBrowser()) return;
+	try {
+		window.localStorage.setItem(key, JSON.stringify(value));
+	} catch {}
+}
+
+function clearCachedValue(key: string) {
+	delete sharedCache[key];
+	if (!isBrowser()) return;
+	try {
+		window.localStorage.removeItem(key);
+	} catch {}
+}
+
+async function clearSharedValue(key: string) {
+	if (!isBrowser()) return false;
+	try {
+		return await deleteSharedValue(key);
+	} catch {
+		return false;
+	}
+}
+
+async function refreshFromSharedStorage(force = false) {
+	if (!isBrowser()) return;
+	if (!force && sharedHydrationPromise) return sharedHydrationPromise;
 
 	sharedHydrationPromise = (async () => {
 		try {
-			const res = await fetch(`/api/storage`);
-			if (!res.ok) {
-				console.warn("Failed to fetch shared storage");
-				return;
-			}
-			const store = await res.json() as Record<string, unknown>;
-			
-			// Update localStorage with all keys from storage
-			for (const [key, value] of Object.entries(store)) {
-				if (value !== null && value !== undefined) {
-					try {
-						localStorage.setItem(key, JSON.stringify(value));
-					} catch (error) {
-						console.warn(`Failed to set localStorage key ${key}:`, error);
-					}
+			const store = await readAllSharedValues();
+			Object.entries(store).forEach(([key, value]) => {
+				if (value === null || value === undefined) {
+					clearCachedValue(key);
+				} else {
+					writeCachedValue(key, value);
 				}
-			}
-		} catch (error) {
-			console.warn("Error refreshing from shared storage:", error);
-		}
+			});
+		} catch {}
 	})().finally(() => {
 		sharedHydrationPromise = null;
 	});
@@ -87,47 +109,24 @@ async function refreshFromSharedStorage() {
 }
 
 async function writeSharedValue(key: string, value: unknown) {
-	if (typeof window === "undefined") return; // Only run on client
+	if (!isBrowser()) return false;
 
 	try {
-		const response = await fetch('/api/storage', {
-			method: 'POST',
-			headers: { 'Content-Type': 'application/json' },
-			body: JSON.stringify({ key, value }),
-		});
-		
-		if (!response.ok) {
-			const errorData = await response.json().catch(() => ({}));
-			console.warn(`Failed to save ${key} to storage:`, errorData);
-			return false;
+		const ok = await writeConvexValue(key, value);
+		if (ok) {
+			writeCachedValue(key, value);
+			return true;
 		}
-		
-		return true;
-	} catch (error) {
-		console.warn(`Error writing shared value for ${key}:`, error);
-		// Still fail gracefully - data is in localStorage
+		return false;
+	} catch {
+		writeCachedValue(key, value);
 		return false;
 	}
 }
 
-function getLocalValue<T>(key: string, fallback: T): T {
-	try {
-		const raw = localStorage.getItem(key);
-		return raw ? JSON.parse(raw) : fallback;
-	} catch {
-		return fallback;
-	}
-}
-
-function setLocalValue(key: string, value: unknown) {
-	try {
-		localStorage.setItem(key, JSON.stringify(value));
-	} catch {}
-}
-
-if (typeof window !== "undefined") {
+if (isBrowser()) {
 	migrateLegacyStorageKeys();
-	void refreshFromSharedStorage();
+	void refreshFromSharedStorage(true);
 }
 
 export const defaultCoupons: Coupon[] = [
@@ -229,75 +228,52 @@ export const defaultSiteSettings: SiteSettings = {
 };
 
 export function getCategories(): Category[] {
-	try {
-		const raw = localStorage.getItem(CATEGORIES_STORAGE_KEY);
-		if (!raw) return categories;
-		const saved = JSON.parse(raw) as Category[];
-		return saved.map(c => ({ ...categories.find(d => d.id === c.id) ?? c, ...c }));
-	} catch {
-		return categories;
+	const saved = readCachedValue<Category[] | null>(CATEGORIES_STORAGE_KEY, null);
+	if (!saved || saved.length === 0) {
+		return categories.map((item) => ({ ...item }));
 	}
+	return saved.map((c) => ({ ...categories.find((d) => d.id === c.id) ?? {}, ...c }));
 }
 
 export function saveCategories(categoryList: Category[]) {
-	try {
-		setLocalValue(CATEGORIES_STORAGE_KEY, categoryList);
-		void writeSharedValue(CATEGORIES_STORAGE_KEY, categoryList);
-		notifyDataChanged();
-	} catch {}
+	writeCachedValue(CATEGORIES_STORAGE_KEY, categoryList);
+	void writeSharedValue(CATEGORIES_STORAGE_KEY, categoryList);
+	notifyDataChanged();
 }
 
 export function getProducts(): Product[] {
-	try {
-		const raw = localStorage.getItem(PRODUCT_STORAGE_KEY);
-		if (!raw) return defaultProducts;
-		const saved = JSON.parse(raw) as Product[];
-		return saved.map(p => ({ ...defaultProducts.find(d => d.id === p.id) ?? p, ...p }));
-	} catch {
-		return defaultProducts;
+	const saved = readCachedValue<Product[] | null>(PRODUCT_STORAGE_KEY, null);
+	if (!saved || saved.length === 0) {
+		return defaultProducts.map((item) => ({ ...item }));
 	}
+	return saved.map((p) => ({ ...defaultProducts.find((d) => d.id === p.id) ?? {}, ...p }));
 }
 
 export function saveProducts(products: Product[]) {
-	try {
-		setLocalValue(PRODUCT_STORAGE_KEY, products);
-		void writeSharedValue(PRODUCT_STORAGE_KEY, products);
-		notifyDataChanged();
-	} catch {}
+	writeCachedValue(PRODUCT_STORAGE_KEY, products);
+	void writeSharedValue(PRODUCT_STORAGE_KEY, products);
+	notifyDataChanged();
 }
 
 export function getSiteSettings(): SiteSettings {
-	try {
-		const raw = localStorage.getItem(SITE_SETTINGS_KEY);
-		return raw ? { ...defaultSiteSettings, ...JSON.parse(raw) } : defaultSiteSettings;
-	} catch {
-		return defaultSiteSettings;
-	}
+	const saved = readCachedValue<Partial<SiteSettings> | null>(SITE_SETTINGS_KEY, null);
+	return saved ? { ...defaultSiteSettings, ...saved } : defaultSiteSettings;
 }
 
 export function saveSiteSettings(settings: SiteSettings) {
-	try {
-		setLocalValue(SITE_SETTINGS_KEY, settings);
-		void writeSharedValue(SITE_SETTINGS_KEY, settings);
-		notifyDataChanged();
-	} catch {}
+	writeCachedValue(SITE_SETTINGS_KEY, settings);
+	void writeSharedValue(SITE_SETTINGS_KEY, settings);
+	notifyDataChanged();
 }
 
 export function getUserAccounts(): UserAccount[] {
-	try {
-		const raw = localStorage.getItem(USER_ACCOUNTS_KEY);
-		return raw ? JSON.parse(raw) : [];
-	} catch {
-		return [];
-	}
+	return readCachedValue<UserAccount[]>(USER_ACCOUNTS_KEY, []);
 }
 
 export function saveUserAccounts(accounts: UserAccount[]) {
-	try {
-		setLocalValue(USER_ACCOUNTS_KEY, accounts);
-		void writeSharedValue(USER_ACCOUNTS_KEY, accounts);
-		notifyDataChanged();
-	} catch {}
+	writeCachedValue(USER_ACCOUNTS_KEY, accounts);
+	void writeSharedValue(USER_ACCOUNTS_KEY, accounts);
+	notifyDataChanged();
 }
 
 // Simple hash function for demo (NOT for production - use bcrypt in real app)
@@ -327,7 +303,6 @@ function validateEmail(email: string): boolean {
 
 export function registerUser(input: { name: string; email: string; phone: string; password: string; address: string; city: string }) {
 	try {
-		// Validate inputs
 		if (!input.name || input.name.length < 2 || input.name.length > 100) return null;
 		if (!validateEmail(input.email)) return null;
 		if (!input.phone || input.phone.length < 10 || input.phone.length > 20) return null;
@@ -338,7 +313,7 @@ export function registerUser(input: { name: string; email: string; phone: string
 		if (!passwordValidation.valid) return null;
 
 		const accounts = getUserAccounts();
-		const emailExists = accounts.some(account => account.email.toLowerCase() === input.email.toLowerCase());
+		const emailExists = accounts.some((account) => account.email.toLowerCase() === input.email.toLowerCase());
 		if (emailExists) return null;
 
 		const newAccount: UserAccount = {
@@ -354,7 +329,7 @@ export function registerUser(input: { name: string; email: string; phone: string
 
 		accounts.push(newAccount);
 		saveUserAccounts(accounts);
-		setLocalValue(USER_SESSION_KEY, newAccount);
+		writeCachedValue(USER_SESSION_KEY, newAccount);
 		void writeSharedValue(USER_SESSION_KEY, newAccount);
 		notifyDataChanged();
 		return newAccount;
@@ -365,16 +340,14 @@ export function registerUser(input: { name: string; email: string; phone: string
 
 export function loginUser(email: string, password: string) {
 	try {
-		// Validate inputs
 		if (!validateEmail(email) || !password || password.length < 1) return null;
 
 		const accounts = getUserAccounts();
-		const account = accounts.find(item => item.email.toLowerCase() === email.trim().toLowerCase() && item.password === simpleHash(password));
+		const account = accounts.find((item) => item.email.toLowerCase() === email.trim().toLowerCase() && item.password === simpleHash(password));
 		if (!account) return null;
 
-		// Create session with timestamp for expiry validation
 		const sessionData = { ...account, sessionCreated: Date.now() };
-		setLocalValue(USER_SESSION_KEY, sessionData);
+		writeCachedValue(USER_SESSION_KEY, sessionData);
 		void writeSharedValue(USER_SESSION_KEY, sessionData);
 		notifyDataChanged();
 		return account;
@@ -384,191 +357,144 @@ export function loginUser(email: string, password: string) {
 }
 
 export function getCurrentUser(): UserAccount | null {
-	try {
-		const raw = localStorage.getItem(USER_SESSION_KEY);
-		return raw ? JSON.parse(raw) : null;
-	} catch {
-		return null;
-	}
+	return readCachedValue<UserAccount | null>(USER_SESSION_KEY, null);
 }
 
 export function isUserLoggedIn() {
-	try {
-		return Boolean(localStorage.getItem(USER_SESSION_KEY));
-	} catch {
-		return false;
-	}
+	return Boolean(getCurrentUser());
 }
 
 export function logoutUser() {
-	try {
-		localStorage.removeItem(USER_SESSION_KEY);
-		void writeSharedValue(USER_SESSION_KEY, null);
-		notifyDataChanged();
-	} catch {}
+	clearCachedValue(USER_SESSION_KEY);
+	void writeSharedValue(USER_SESSION_KEY, null);
+	notifyDataChanged();
 }
 
 export function saveAllAdminData() {
-	try {
-		saveProducts(getProducts());
-		saveCategories(getCategories());
-		saveSiteSettings(getSiteSettings());
-		saveCoupons(getCoupons());
-		saveReviews(getReviews());
-		saveOrders(getOrders());
-		saveUserAccounts(getUserAccounts());
-		saveWishlist(getWishlist());
-		const cart = getLocalValue("9teen_cart", []);
-		setLocalValue("9teen_cart", cart);
-		void writeSharedValue("9teen_cart", cart);
-		const lastOrder = getLocalValue("9teen_last_order", null);
-		setLocalValue("9teen_last_order", lastOrder);
-		void writeSharedValue("9teen_last_order", lastOrder);
-		const session = getCurrentUser();
-		if (session) {
-			setLocalValue(USER_SESSION_KEY, session);
-			void writeSharedValue(USER_SESSION_KEY, session);
-		}
-		notifyDataChanged();
-	} catch {}
+	saveProducts(getProducts());
+	saveCategories(getCategories());
+	saveSiteSettings(getSiteSettings());
+	saveCoupons(getCoupons());
+	saveReviews(getReviews());
+	saveOrders(getOrders());
+	saveUserAccounts(getUserAccounts());
+	saveWishlist(getWishlist());
+	const cart = readCachedValue<unknown[]>("9teen_cart", []);
+	writeCachedValue("9teen_cart", cart);
+	void writeSharedValue("9teen_cart", cart);
+	const lastOrder = readCachedValue<Order | null>("9teen_last_order", null);
+	writeCachedValue("9teen_last_order", lastOrder);
+	void writeSharedValue("9teen_last_order", lastOrder);
+	const session = getCurrentUser();
+	if (session) {
+		writeCachedValue(USER_SESSION_KEY, session);
+		void writeSharedValue(USER_SESSION_KEY, session);
+	}
+	notifyDataChanged();
 }
 
 export function resetProducts() {
-	try { 
-		localStorage.removeItem(PRODUCT_STORAGE_KEY);
-		void writeSharedValue(PRODUCT_STORAGE_KEY, null);
-		notifyDataChanged(); 
-	} catch {}
+	clearCachedValue(PRODUCT_STORAGE_KEY);
+	void writeSharedValue(PRODUCT_STORAGE_KEY, null);
+	notifyDataChanged();
 }
 
 export function resetCategories() {
-	try { 
-		localStorage.removeItem(CATEGORIES_STORAGE_KEY);
-		void writeSharedValue(CATEGORIES_STORAGE_KEY, null);
-		notifyDataChanged(); 
-	} catch {}
+	clearCachedValue(CATEGORIES_STORAGE_KEY);
+	void clearSharedValue(CATEGORIES_STORAGE_KEY);
+	notifyDataChanged();
 }
 
 export function resetSiteSettings() {
-	try { 
-		localStorage.removeItem(SITE_SETTINGS_KEY);
-		void writeSharedValue(SITE_SETTINGS_KEY, null);
-		notifyDataChanged(); 
-	} catch {}
+	clearCachedValue(SITE_SETTINGS_KEY);
+	void clearSharedValue(SITE_SETTINGS_KEY);
+	notifyDataChanged();
 }
 
 export function resetOrders() {
-	try { 
-		localStorage.removeItem("9teen_orders");
-		localStorage.removeItem("9teen_last_order");
-		void writeSharedValue("9teen_orders", null);
-		void writeSharedValue("9teen_last_order", null);
-		notifyDataChanged(); 
-	} catch {}
+	clearCachedValue("9teen_orders");
+	clearCachedValue("9teen_last_order");
+	void clearSharedValue("9teen_orders");
+	void clearSharedValue("9teen_last_order");
+	notifyDataChanged();
 }
 
 export function resetAllData() {
-	try {
-		const keysToDelete = [
-			PRODUCT_STORAGE_KEY,
-			CATEGORIES_STORAGE_KEY,
-			SITE_SETTINGS_KEY,
-			"9teen_orders",
-			"9teen_last_order",
-			COUPON_STORAGE_KEY,
-			REVIEW_STORAGE_KEY,
-			WISHLIST_STORAGE_KEY,
-			USER_ACCOUNTS_KEY,
-			USER_SESSION_KEY,
-			"9teen_cart"
-		];
-		keysToDelete.forEach(key => {
-			localStorage.removeItem(key);
-			void writeSharedValue(key, null);
-		});
-		notifyDataChanged();
-	} catch {}
+	const keysToDelete = [
+		PRODUCT_STORAGE_KEY,
+		CATEGORIES_STORAGE_KEY,
+		SITE_SETTINGS_KEY,
+		"9teen_orders",
+		"9teen_last_order",
+		COUPON_STORAGE_KEY,
+		REVIEW_STORAGE_KEY,
+		WISHLIST_STORAGE_KEY,
+		USER_ACCOUNTS_KEY,
+		USER_SESSION_KEY,
+		"9teen_cart",
+	];
+	keysToDelete.forEach((key) => {
+		clearCachedValue(key);
+		void clearSharedValue(key);
+	});
+	notifyDataChanged();
 }
 
 export function getCoupons(): Coupon[] {
-	try {
-		const raw = localStorage.getItem(COUPON_STORAGE_KEY);
-		return raw ? JSON.parse(raw) : defaultCoupons;
-	} catch { return defaultCoupons; }
+	return readCachedValue<Coupon[]>(COUPON_STORAGE_KEY, defaultCoupons);
 }
 
 export function saveCoupons(coupons: Coupon[]) {
-	try {
-		setLocalValue(COUPON_STORAGE_KEY, coupons);
-		void writeSharedValue(COUPON_STORAGE_KEY, coupons);
-		notifyDataChanged();
-	} catch {}
+	writeCachedValue(COUPON_STORAGE_KEY, coupons);
+	void writeSharedValue(COUPON_STORAGE_KEY, coupons);
+	notifyDataChanged();
 }
 
 export function getReviews(): Review[] {
-	try {
-		const raw = localStorage.getItem(REVIEW_STORAGE_KEY);
-		return raw ? JSON.parse(raw) : defaultReviews;
-	} catch { return defaultReviews; }
+	return readCachedValue<Review[]>(REVIEW_STORAGE_KEY, defaultReviews);
 }
 
 export function saveReviews(reviews: Review[]) {
-	try {
-		setLocalValue(REVIEW_STORAGE_KEY, reviews);
-		void writeSharedValue(REVIEW_STORAGE_KEY, reviews);
-		notifyDataChanged();
-	} catch {}
+	writeCachedValue(REVIEW_STORAGE_KEY, reviews);
+	void writeSharedValue(REVIEW_STORAGE_KEY, reviews);
+	notifyDataChanged();
 }
 
 export function getWishlist(): string[] {
-	try {
-		const raw = localStorage.getItem(WISHLIST_STORAGE_KEY);
-		return raw ? JSON.parse(raw) : [];
-	} catch {
-		return [];
-	}
+	return readCachedValue<string[]>(WISHLIST_STORAGE_KEY, []);
 }
 
 export function saveWishlist(ids: string[]) {
-	try {
-		setLocalValue(WISHLIST_STORAGE_KEY, ids);
-		void writeSharedValue(WISHLIST_STORAGE_KEY, ids);
-		notifyDataChanged();
-	} catch {}
+	writeCachedValue(WISHLIST_STORAGE_KEY, ids);
+	void writeSharedValue(WISHLIST_STORAGE_KEY, ids);
+	notifyDataChanged();
 }
 
 export function toggleWishlist(productId: string) {
 	const current = getWishlist();
-	const next = current.includes(productId) ? current.filter(id => id !== productId) : [...current, productId];
+	const next = current.includes(productId) ? current.filter((id) => id !== productId) : [...current, productId];
 	saveWishlist(next);
 	return next;
 }
 
 export function addReview(review: Review) {
-	try {
-		const reviews = getReviews();
-		reviews.unshift(review);
-		setLocalValue(REVIEW_STORAGE_KEY, reviews);
-		void writeSharedValue(REVIEW_STORAGE_KEY, reviews);
-		notifyDataChanged();
-	} catch {}
+	const reviews = getReviews();
+	reviews.unshift(review);
+	saveReviews(reviews);
 }
 
 export function saveOrders(orders: Order[]) {
-	try {
-		setLocalValue("9teen_orders", orders);
-		void writeSharedValue("9teen_orders", orders);
-		notifyDataChanged();
-	} catch {}
+	writeCachedValue("9teen_orders", orders);
+	void writeSharedValue("9teen_orders", orders);
+	notifyDataChanged();
 }
 
 export function saveOrder(order: Order) {
-	try {
-		const raw = localStorage.getItem("9teen_orders");
-		const arr: Order[] = raw ? JSON.parse(raw) : [];
-		arr.unshift(order);
-		saveOrders(arr);
-	} catch {}
+	const arr = getOrders();
+	arr.unshift(order);
+	saveOrders(arr);
+	writeCachedValue("9teen_last_order", order);
+	void writeSharedValue("9teen_last_order", order);
 }
 
 export function formatWhatsappMessage(settings: SiteSettings, order: Order) {
@@ -579,7 +505,7 @@ export function formatWhatsappMessage(settings: SiteSettings, order: Order) {
 		.replace(/{name}/g, order.customer.name)
 		.replace(/{address}/g, order.customer.address)
 		.replace(/{city}/g, order.customer.city);
-};
+}
 
 export function formatEmailSubject(settings: SiteSettings, order: Order) {
 	return settings.emailSubject
@@ -610,64 +536,51 @@ export function buildWhatsappLink(number: string, message: string) {
 }
 
 export function getOrders(): Order[] {
-	try {
-		const raw = localStorage.getItem("9teen_orders");
-		return raw ? JSON.parse(raw) : [];
-	} catch { return []; }
+	return readCachedValue<Order[]>("9teen_orders", []);
 }
 
 export function adminLogin(username: string, pw: string) {
 	try {
-		// Validate inputs
 		if (!username || !pw || username.length < 1 || pw.length < 1) return false;
 
 		const settings = getSiteSettings();
-		// Check if admin credentials are configured
 		if (!settings.adminUsername || !settings.adminPassword) {
 			console.warn("Admin credentials not configured");
 			return false;
 		}
 
 		if (username === settings.adminUsername && pw === settings.adminPassword) {
-			// Store session with timestamp
-			localStorage.setItem(ADMIN_STORAGE_KEY, JSON.stringify({ authenticated: true, timestamp: Date.now() }));
-			localStorage.removeItem(LEGACY_ADMIN_STORAGE_KEY);
+			writeCachedValue(ADMIN_STORAGE_KEY, { authenticated: true, timestamp: Date.now() });
+			clearCachedValue(LEGACY_ADMIN_STORAGE_KEY);
 			return true;
 		}
-	} catch (error) {
+	} catch {
 		console.warn("Admin login error");
 	}
 	return false;
 }
 
 export function isAdminLoggedIn() {
+	const token = readCachedValue<string | null>(ADMIN_STORAGE_KEY, null);
+	if (!token) return false;
 	try {
-		const token = localStorage.getItem(ADMIN_STORAGE_KEY);
-		if (!token) return localStorage.getItem(LEGACY_ADMIN_STORAGE_KEY) === "1";
-
-		try {
-			const parsed = JSON.parse(token);
-			// Check if session is still valid (24 hours)
-			const sessionTimeout = 24 * 60 * 60 * 1000;
-			const isExpired = Date.now() - parsed.timestamp > sessionTimeout;
-			if (isExpired) {
-				localStorage.removeItem(ADMIN_STORAGE_KEY);
-				return false;
-			}
-			return parsed.authenticated === true;
-		} catch {
+		const parsed = JSON.parse(token as string);
+		const sessionTimeout = 24 * 60 * 60 * 1000;
+		const isExpired = Date.now() - parsed.timestamp > sessionTimeout;
+		if (isExpired) {
+			clearCachedValue(ADMIN_STORAGE_KEY);
 			return false;
 		}
+		return parsed.authenticated === true;
 	} catch {
 		return false;
 	}
 }
+
 export function adminLogout() {
-	try {
-		localStorage.removeItem(ADMIN_STORAGE_KEY);
-		localStorage.removeItem(LEGACY_ADMIN_STORAGE_KEY);
-		notifyDataChanged();
-	} catch {}
+	clearCachedValue(ADMIN_STORAGE_KEY);
+	clearCachedValue(LEGACY_ADMIN_STORAGE_KEY);
+	notifyDataChanged();
 }
 
 // keep types exported from types.ts for consumers
