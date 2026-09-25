@@ -297,7 +297,7 @@ export default function AdminSettingsPage() {
             <h1 className="text-3xl font-black mt-3">Website Editor</h1>
             <p className="text-sm text-white/70 mt-2">Edit the homepage hero, WhatsApp order template, and store branding.</p>
           </div>
-          <button onClick={async () => { handleSave(); }} className="inline-flex items-center gap-2 rounded-full bg-red-500 px-4 py-2 text-sm font-semibold text-white hover:bg-red-400 transition">
+          <button id="save-settings" onClick={async () => { await handleSave(); }} className="inline-flex items-center gap-2 rounded-full bg-red-500 px-4 py-2 text-sm font-semibold text-white hover:bg-red-400 transition">
             <Save className="w-4 h-4" /> Save Settings
           </button>
         </div>

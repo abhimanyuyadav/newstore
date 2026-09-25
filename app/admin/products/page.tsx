@@ -25,24 +25,6 @@ const defaultNewProduct = (): Omit<Product, "id"> => ({
   variants: [],
 });
 
-const createDemoProduct = (): Product => ({
-  id: generateId(),
-  name: "Demo Hoodie",
-  category: "men",
-  price: 1499,
-  originalPrice: 1999,
-  image: "https://images.unsplash.com/photo-1483985988355-763728e1935b?q=80&w=1200&auto=format&fit=crop",
-  description: "Soft and stylish demo hoodie for your storefront.",
-  sizes: ["S", "M", "L"],
-  variants: [{ name: "Color", values: ["Black", "Gray"] }],
-  featured: true,
-  inStock: true,
-  discountEnabled: true,
-  newArrival: true,
-  bestSeller: true,
-  trending: true,
-});
-
 function readImageFile(file: File): Promise<string | null> {
   return new Promise(resolve => {
     const reader = new FileReader();
@@ -57,6 +39,17 @@ export default function AdminProductsPage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [newProduct, setNewProduct] = useState(defaultNewProduct());
   const [saved, setSaved] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState("");
+  const saveVersion = useRef(0);
+  const adding = useRef(false);
+  async function saveCatalog(next: Product[]) {
+    const version = ++saveVersion.current;
+    setSaving(true); setSaved(false); setSaveError("");
+    try { await saveProducts(next); if (version === saveVersion.current) setSaved(true); return true; }
+    catch (error) { if (version === saveVersion.current) setSaveError(error instanceof Error ? error.message : "Save failed. Please retry."); return false; }
+    finally { if (version === saveVersion.current) setSaving(false); }
+  }
   const [query, setQuery] = useState("");
   const [stockFilter, setStockFilter] = useState("all");
   const [isReady, setIsReady] = useState(false);
@@ -67,6 +60,7 @@ export default function AdminProductsPage() {
   useEffect(() => {
     setProducts(getProducts());
     setCategories(getCategories());
+    setNewProduct(p => ({...p, category: getCategories()[0]?.id || ""}));
     setIsReady(true);
 
     const handleStorage = (event: StorageEvent) => {
@@ -91,8 +85,7 @@ export default function AdminProductsPage() {
   const updateProduct = (id: string, key: keyof Product, value: Product[keyof Product]) => {
     const nextProducts = products.map(product => product.id === id ? { ...product, [key]: value } : product);
     setProducts(nextProducts);
-    saveProducts(nextProducts);
-    setSaved(true);
+    void saveCatalog(nextProducts);
   };
 
   const updateProductVariant = (id: string, variantIndex: number, field: "name" | "values", value: string) => {
@@ -106,8 +99,7 @@ export default function AdminProductsPage() {
       return { ...product, variants };
     });
     setProducts(nextProducts);
-    saveProducts(nextProducts);
-    setSaved(true);
+    void saveCatalog(nextProducts);
   };
 
   const addProductVariantGroup = (id: string) => {
@@ -116,8 +108,7 @@ export default function AdminProductsPage() {
       variants: [ ...(product.variants ?? []), { name: "Variant", values: [] } ],
     } : product);
     setProducts(nextProducts);
-    saveProducts(nextProducts);
-    setSaved(true);
+    void saveCatalog(nextProducts);
   };
 
   const removeProductVariantGroup = (id: string, variantIndex: number) => {
@@ -127,15 +118,14 @@ export default function AdminProductsPage() {
       return { ...product, variants };
     });
     setProducts(nextProducts);
-    saveProducts(nextProducts);
-    setSaved(true);
+    void saveCatalog(nextProducts);
   };
 
   const deleteProduct = (id: string) => {
+    if (!confirm("Delete this product? This cannot be undone.")) return;
     const nextProducts = products.filter(product => product.id !== id);
     setProducts(nextProducts);
-    saveProducts(nextProducts);
-    setSaved(true);
+    void saveCatalog(nextProducts);
   };
 
   const updateNewProductVariant = (variantIndex: number, field: "name" | "values", value: string) => {
@@ -167,6 +157,9 @@ export default function AdminProductsPage() {
   };
 
   const addProduct = async () => {
+    if (adding.current) return false;
+    if (!categories.some(c => c.id === newProduct.category)) { setNewImageError("Choose a valid category before adding a product."); return false; }
+    if (!Number.isFinite(newProduct.price) || newProduct.price < 0 || (newProduct.originalPrice ?? 0) < 0) { setNewImageError("Prices must be zero or greater."); return false; }
     if (!newProduct.name.trim()) { setNewImageError("Product name is required."); return false; }
     if (!newProduct.image.trim()) { setNewImageError("Product image is required."); return false; }
     const nextProduct: Product = {
@@ -176,9 +169,12 @@ export default function AdminProductsPage() {
       variants: newProduct.variants?.length ? newProduct.variants : [],
     };
     const nextProducts = [nextProduct, ...products];
-    try { await saveProducts(nextProducts); } catch (error) { setNewImageError(error instanceof Error ? error.message : "Save failed"); return false; }
+    adding.current = true;
+    const success = await saveCatalog(nextProducts);
+    adding.current = false;
+    if (!success) return false;
     setProducts(nextProducts);
-    setNewProduct(defaultNewProduct());
+    setNewProduct({...defaultNewProduct(), category: categories[0]?.id || ""});
     setSaved(true);
 
     setNewImageError("");
@@ -206,19 +202,9 @@ export default function AdminProductsPage() {
             <p className="text-sm text-white/70 mt-2">Manage your catalog below. Existing product edits save automatically.</p>
           </div>
           <div className="inline-flex flex-wrap items-center gap-3">
-            <button type="button" disabled={!isReady} onClick={() => {
-                const demoProduct = createDemoProduct();
-                const nextProducts = [demoProduct, ...products];
-                setProducts(nextProducts);
-                saveProducts(nextProducts);
-                setSaved(true);
-              }}
-              className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/10 px-4 py-2 text-sm font-semibold text-white hover:bg-white/15 transition disabled:opacity-50 disabled:cursor-not-allowed">
-              <PlusCircle className="w-4 h-4" /> Add Demo Product
-            </button>
-            <button type="button" disabled={!isReady} onClick={async () => {
-                try { await saveProducts(products); } catch { setSaved(false); return; }
-                setSaved(true);
+
+            <button type="button" disabled={!isReady || saving} onClick={async () => {
+                await saveCatalog(products);
               }}
               className="inline-flex items-center gap-2 rounded-full bg-red-500 px-4 py-2 text-sm font-semibold text-white hover:bg-red-400 transition disabled:opacity-50 disabled:cursor-not-allowed">
               <Save className="w-4 h-4" /> Save Products
@@ -252,7 +238,7 @@ export default function AdminProductsPage() {
               <p className="text-sm text-white/60 mt-2">Fill in the details, then choose Add Product. Turn off In Stock for products that are not ready to sell.</p>
             </div>
             <div className="flex flex-wrap gap-3">
-              <button onClick={addProduct} className="inline-flex items-center gap-2 rounded-full bg-red-500 px-4 py-2 text-sm font-semibold text-white hover:bg-red-400 transition">
+              <button disabled={saving || !isReady} onClick={addProduct} className="inline-flex items-center gap-2 rounded-full bg-red-500 px-4 py-2 text-sm font-semibold text-white hover:bg-red-400 transition">
                 <PlusCircle className="w-4 h-4" /> Add Product
               </button>
 
@@ -312,12 +298,12 @@ export default function AdminProductsPage() {
               </label>
               <label className="block text-sm text-white/70">
                 Price
-                <input type="number" value={newProduct.price} onChange={e => setNewProduct({ ...newProduct, price: Number(e.target.value) })}
+                <input min="0" type="number" value={newProduct.price} onChange={e => setNewProduct({ ...newProduct, price: Number(e.target.value) })}
                   className="mt-2 w-full rounded-2xl border border-white/10 bg-[#050505] px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-red-400" />
               </label>
               <label className="block text-sm text-white/70">
                 Original Price
-                <input type="number" value={newProduct.originalPrice} onChange={e => setNewProduct({ ...newProduct, originalPrice: Number(e.target.value) })}
+                <input min="0" type="number" value={newProduct.originalPrice} onChange={e => setNewProduct({ ...newProduct, originalPrice: Number(e.target.value) })}
                   className="mt-2 w-full rounded-2xl border border-white/10 bg-[#050505] px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-red-400" />
               </label>
               <label className="block text-sm text-white/70">
@@ -414,7 +400,7 @@ export default function AdminProductsPage() {
                   <div>
                     <p className="text-xs uppercase tracking-[0.35em] text-white/50">Product</p>
                     <p className="text-xl font-bold mt-2">{product.name}</p>
-                    <p className="text-sm text-white/50 mt-1">{product.category}</p>
+                    <p className="text-sm text-white/50 mt-1">{categories.find(c => c.id === product.category)?.name || "Choose a category"}</p>
                   </div>
                 </div>
                 <div className="flex flex-wrap gap-2">
@@ -436,12 +422,12 @@ export default function AdminProductsPage() {
                 </label>
                 <label className="block text-sm text-white/70">
                   Price
-                  <input type="number" value={product.price} onChange={e => updateProduct(product.id, "price", Number(e.target.value))}
+                  <input min="0" type="number" value={product.price} onChange={e => updateProduct(product.id, "price", Number(e.target.value))}
                     className="mt-2 w-full rounded-2xl border border-white/10 bg-[#050505] px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-red-400" />
                 </label>
                 <label className="block text-sm text-white/70">
                   Original Price
-                  <input type="number" value={product.originalPrice || 0} onChange={e => updateProduct(product.id, "originalPrice", Number(e.target.value))}
+                  <input min="0" type="number" value={product.originalPrice || 0} onChange={e => updateProduct(product.id, "originalPrice", Number(e.target.value))}
                     className="mt-2 w-full rounded-2xl border border-white/10 bg-[#050505] px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-red-400" />
                 </label>
                 <label className="block text-sm text-white/70">
@@ -456,6 +442,11 @@ export default function AdminProductsPage() {
                 </label>
               </div>
 
+              <div className="grid gap-4 mt-4 md:grid-cols-2">
+                <label>Category<select className="block w-full mt-2" value={product.category} onChange={e => updateProduct(product.id, "category", e.target.value)}>{!categories.some(c => c.id === product.category) && <option value={product.category}>Choose a category</option>}{categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}</select></label>
+                <label>Sizes (comma separated)<input className="block w-full mt-2" value={product.sizes.join(",")} onChange={e => updateProduct(product.id, "sizes", e.target.value.split(","))} /></label>
+              </div>
+              {(product.variants ?? []).length === 0 && <button className="mt-4 rounded-full border px-4 py-2" onClick={() => addProductVariantGroup(product.id)}>Add Variant</button>}
               {(product.variants ?? []).length > 0 && (
                 <div className="space-y-3 mt-4 rounded-3xl border border-white/10 bg-white/5 p-4">
                   <div className="flex items-center justify-between gap-3">
@@ -514,7 +505,9 @@ export default function AdminProductsPage() {
           ))}
         </div>
 
-        {saved && <p className="mt-4 text-sm text-green-400">Catalog saved.</p>}
+        {saving && <p role="status" className="mt-4">Saving catalog...</p>}
+        {saveError && <p role="alert" className="mt-4 text-red-400">{saveError} Use Save Products to retry.</p>}
+        {saved && <p role="status" className="mt-4 text-sm text-green-400">Catalog saved.</p>}
       </div>
     </div>
   );

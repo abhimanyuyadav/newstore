@@ -11,20 +11,16 @@ export default function AdminCategoriesPage() {
   const [saved, setSaved] = useState(false);
 
   const updateCategory = (index: number, key: keyof typeof categories[number], value: string | string[] | boolean) => {
-    setCategories(prev => {
-      const next = prev.map((item, idx) => idx === index ? { ...item, [key]: value } : item);
-      saveCategories(next);
-      return next;
-    });
+    const next = categories.map((item, idx) => idx === index ? { ...item, [key]: value } : item);
+    setCategories(next);
+    void saveCategories(next).catch(() => setSaved(false));
     setSaved(false);
   };
 
   const toggleEnabled = (index: number) => {
-    setCategories(prev => {
-      const next = prev.map((item, idx) => idx === index ? { ...item, enabled: !item.enabled } : item);
-      saveCategories(next);
-      return next;
-    });
+    const next = categories.map((item, idx) => idx === index ? { ...item, enabled: !item.enabled } : item);
+    setCategories(next);
+    void saveCategories(next).catch(() => setSaved(false));
     setSaved(false);
   };
 
@@ -44,16 +40,15 @@ export default function AdminCategoriesPage() {
 
   const deleteCategory = (index: number) => {
     if (!confirm('Delete this category?')) return;
-    setCategories(prev => {
-      const next = prev.filter((_, i) => i !== index);
-      saveCategories(next);
-      return next;
-    });
+    const next = categories.filter((_, i) => i !== index);
+    setCategories(next);
+    void saveCategories(next).catch(() => setSaved(false));
     setSaved(false);
   };
 
   const handleReset = () => {
-    resetCategories();
+    if (!confirm("Replace all categories with the defaults? Existing product categories may need reassignment.")) return;
+    void resetCategories().catch(() => setSaved(false));
     setCategories(getCategories());
     setSaved(false);
   };
