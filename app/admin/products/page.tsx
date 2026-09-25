@@ -1,4 +1,5 @@
 "use client";
+import { uploadImage } from "@/lib/uploadImage";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { Product, Category } from "@/lib/types";
 import { getProducts, saveProducts, getCategories } from "@/lib/data";
@@ -165,8 +166,8 @@ export default function AdminProductsPage() {
   };
 
   const addProduct = async () => {
-    if (!newProduct.name.trim()) { setNewImageError("Product name is required."); return; }
-    if (!newProduct.image.trim()) { setNewImageError("Product image is required."); return; }
+    if (!newProduct.name.trim()) { setNewImageError("Product name is required."); return false; }
+    if (!newProduct.image.trim()) { setNewImageError("Product image is required."); return false; }
     const nextProduct: Product = {
       ...newProduct,
       id: generateId(),
@@ -174,122 +175,24 @@ export default function AdminProductsPage() {
       variants: newProduct.variants?.length ? newProduct.variants : [],
     };
     const nextProducts = [nextProduct, ...products];
+    try { await saveProducts(nextProducts); } catch (error) { setNewImageError(error instanceof Error ? error.message : "Save failed"); return false; }
     setProducts(nextProducts);
-    saveProducts(nextProducts);
     setNewProduct(defaultNewProduct());
     setSaved(true);
     setPublished(false);
     setNewImageError("");
+    return true;
   };
 
-  const publishProduct = async () => {
-    await addProduct();
-    // publish to Supabase as well
-    try {
-      await postProducts([products[0] || {}]);
-    } catch (e) {
-      // ignore publish error — local save still works
-    }
-    setPublished(true);
-  };
+  const publishProduct = async () => { setPublished(await addProduct()); };
 
   const handleProductImageDrop = async (id: string, files: FileList | null) => {
-    if (!files) return;
-    const file = files[0];
-    if (!file.type.startsWith("image/")) return;
-    const maxSize = 2 * 1024 * 1024;
-    if (file.size > maxSize) return;
-    const allowed = ['image/png','image/jpeg','image/webp','image/gif'];
-    if (!allowed.includes(file.type)) return;
-
-    const dataUrl = await readImageFile(file);
-    if (!dataUrl) return;
-
-    // 1) Try server-side upload
-    try {
-      const res = await fetch('/api/uploads/product', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ fileName: file.name, fileData: dataUrl }),
-      });
-      const json = await res.json();
-      if (res.ok && json.publicUrl) {
-        updateProduct(id, 'image', json.publicUrl);
-        return;
-      }
-    } catch (err) {
-      // fallback to next option
-    }
-
-    // 2) Try client Supabase upload
-    try {
-      const { createClient } = await import('@/utils/supabase/client');
-      const supabase = createClient();
-      const uid = `${id}-${Date.now()}-${Math.floor(Math.random()*10000)}`;
-      const ext = file.name.split('.').pop() || 'jpg';
-      const path = `products/${uid}.${ext}`;
-      const { error: uploadError } = await supabase.storage.from('product-images').upload(path, file, { upsert: true });
-      if (!uploadError) {
-        const { data } = supabase.storage.from('product-images').getPublicUrl(path);
-        if (data && data.publicUrl) {
-          updateProduct(id, 'image', data.publicUrl);
-          return;
-        }
-      }
-    } catch (err) {
-      // continue
-    }
-
-    // 3) fallback to embedding data URL
-    updateProduct(id, 'image', dataUrl);
+    if (!files?.[0]) return;
+    try { updateProduct(id,"image",await uploadImage(files[0])); } catch (error) { alert(error instanceof Error ? error.message : "Upload failed"); }
   };
-
   const handleNewProductImageDrop = async (files: FileList | null) => {
-    if (!files) return;
-    const file = files[0];
-    if (!file.type.startsWith("image/")) { setNewImageError("Only image files are supported."); return; }
-    const maxSize = 2 * 1024 * 1024;
-    if (file.size > maxSize) { setNewImageError('Image too large (max 2MB)'); return; }
-
-    const dataUrl = await readImageFile(file);
-    if (!dataUrl) { setNewImageError('Failed to read image'); return; }
-
-    // 1) Try server-side upload
-    try {
-      const res = await fetch('/api/uploads/product', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ fileName: file.name, fileData: dataUrl }),
-      });
-      const json = await res.json();
-      if (res.ok && json.publicUrl) {
-        setNewProduct({ ...newProduct, image: json.publicUrl });
-        setNewImageError('');
-        return;
-      }
-    } catch (err) {}
-
-    // 2) Try client Supabase upload
-    try {
-      const { createClient } = await import('@/utils/supabase/client');
-      const supabase = createClient();
-      const uid = `new-${Date.now()}-${Math.floor(Math.random()*10000)}`;
-      const ext = file.name.split('.').pop() || 'jpg';
-      const path = `products/${uid}.${ext}`;
-      const { error: uploadError } = await supabase.storage.from('product-images').upload(path, file, { upsert: true });
-      if (!uploadError) {
-        const { data } = supabase.storage.from('product-images').getPublicUrl(path);
-        if (data && data.publicUrl) {
-          setNewProduct({ ...newProduct, image: data.publicUrl });
-          setNewImageError('');
-          return;
-        }
-      }
-    } catch (err) {}
-
-    // 3) fallback to data URL
-    setNewProduct({ ...newProduct, image: dataUrl });
-    setNewImageError('');
+    if (!files?.[0]) return;
+    try { const image = await uploadImage(files[0]); setNewProduct(p=>({...p,image})); setNewImageError(""); } catch (error) { setNewImageError(error instanceof Error ? error.message : "Upload failed"); }
   };
 
   return (
@@ -313,7 +216,7 @@ export default function AdminProductsPage() {
               <PlusCircle className="w-4 h-4" /> Add Demo Product
             </button>
             <button type="button" disabled={!isReady} onClick={async () => {
-                saveProducts(products);
+                try { await saveProducts(products); } catch { setSaved(false); return; }
                 setSaved(true);
               }}
               className="inline-flex items-center gap-2 rounded-full bg-red-500 px-4 py-2 text-sm font-semibold text-white hover:bg-red-400 transition disabled:opacity-50 disabled:cursor-not-allowed">

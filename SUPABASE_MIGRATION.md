@@ -1,21 +1,9 @@
-# Supabase migration guide
+# Storage migration
 
-1) Create tables
-- Open your Supabase project, go to SQL Editor, and run the SQL in `sql/migrations/create_supabase_tables.sql`.
+The app's canonical store is the existing `admin_storage` key/value table, accessed exclusively by the server. See README.md for required configuration and rollout steps.
 
-2) Browser migration (quick)
-- Open the site in the admin browser where your `localStorage` contains app data.
-- Visit `/admin/migrate` and click `Run Migration`. The page will POST data to the server API.
+Apply `sql/migrations/secure_admin_storage.sql` after backing up and selecting the intended project. Never apply a migration to a guessed project. Configure the service-role credential only in the server environment.
 
-3) CLI migration (server-side, recommended for large datasets)
-- Prepare JSON files (export from your source): `data/products.json`, `data/orders.json`, `data/users.json`.
-- Set env vars and run the script with a service role key (server only):
+Do not import demo-hashed passwords or browser session/cart/wishlist keys into shared storage. Legacy tables/files may contain unverified payment flags and orders with no authenticated owner. Review those records before moving them into the canonical store; do not automatically infer payment completion or account ownership from an email field.
 
-```bash
-NEXT_PUBLIC_SUPABASE_URL=https://xyz.supabase.co NEXT_SUPABASE_SERVICE_ROLE_KEY=your_service_role_key node scripts/migrate-to-supabase.js
-```
-
-Notes:
-- The CLI script uses the Supabase service role key — keep it secret and run only on trusted servers.
-- After migration, verify data in the Supabase dashboard.
-- Consider adding constraints / indices depending on your needs.
+The old generic table migration script is retired because it wrote a different schema than the live storefront consumed.

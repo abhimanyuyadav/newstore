@@ -42,12 +42,12 @@ export default function Navbar() {
           <button onClick={() => setOpen(!open)} className="md:hidden p-2 rounded-md hover:bg-gray-100">
             {open ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </button>
-          <Link href="/" className="font-black text-lg">19<span className="text-[#f97316]">TEEN</span></Link>
+          <Link href="/" className="font-black text-lg">{settings.siteName}</Link>
         </div>
 
         <nav className="hidden md:flex ml-6 gap-4 text-sm text-gray-600 items-center">
           <Link href="/products" className="hover:text-[#f97316]">{settings.navLabelShop}</Link>
-          <Link href="/products?cat=dresses" className="hover:text-[#f97316]">{settings.navLabelCategories}</Link>
+          <Link href="/products" className="hover:text-[#f97316]">{settings.navLabelCategories}</Link>
           <Link href="/products" className="hover:text-[#f97316]">{settings.navLabelCollections}</Link>
           <Link href="/track-order" className="hover:text-[#f97316]">{settings.navLabelTrackOrder}</Link>
           <Link href="/about" className="hover:text-[#f97316]">{settings.navLabelAbout}</Link>
@@ -79,7 +79,7 @@ export default function Navbar() {
         <div className="md:hidden bg-white border-t border-gray-100">
           <div className="px-4 py-3 space-y-2">
             <Link href="/products" className="block py-2">{settings.navLabelShop}</Link>
-            <Link href="/products?cat=dresses" className="block py-2">{settings.navLabelCategories}</Link>
+            <Link href="/products" className="block py-2">{settings.navLabelCategories}</Link>
             <Link href="/products" className="block py-2">{settings.navLabelCollections}</Link>
             <Link href="/track-order" className="block py-2">{settings.navLabelTrackOrder}</Link>
             <Link href="/about" className="block py-2">{settings.navLabelAbout}</Link>

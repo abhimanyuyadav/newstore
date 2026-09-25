@@ -36,7 +36,7 @@ export default function AccountPage() {
           </div>
           <div className="flex gap-3">
             <Link href="/" className="rounded-full border border-gray-200 px-4 py-2 text-sm font-semibold text-gray-700">Back to home</Link>
-            <button onClick={() => { logoutUser(); router.push("/"); }} className="rounded-full bg-black px-4 py-2 text-sm font-semibold text-white">Logout</button>
+            <button onClick={async () => { try { await logoutUser(); router.push("/"); } catch { alert("Unable to sign out. Please retry."); } }} className="rounded-full bg-black px-4 py-2 text-sm font-semibold text-white">Logout</button>
           </div>
         </div>
 

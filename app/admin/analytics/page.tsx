@@ -7,11 +7,11 @@ export default function AdminAnalyticsPage() {
   const orders = getOrders();
   const products = getProducts();
 
-  const revenue = useMemo(() => orders.reduce((sum, order) => sum + order.total, 0), [orders]);
-  const averageOrder = useMemo(() => orders.length ? revenue / orders.length : 0, [orders, revenue]);
+  const revenue = useMemo(() => orders.filter(order => order.paymentStatus === "paid" && order.status !== "cancelled").reduce((sum, order) => sum + order.total, 0), [orders]);
+  const averageOrder = useMemo(() => orders.filter(o => o.paymentStatus === "paid" && o.status !== "cancelled").length ? revenue / orders.filter(o => o.paymentStatus === "paid" && o.status !== "cancelled").length : 0, [orders, revenue]);
   const productSales = useMemo(() => {
     const map = new Map<string, number>();
-    orders.forEach(order => order.items.forEach(item => map.set(item.id, (map.get(item.id) || 0) + item.quantity)));
+    orders.filter(o => o.paymentStatus === "paid" && o.status !== "cancelled").forEach(order => order.items.forEach(item => map.set(item.id, (map.get(item.id) || 0) + item.quantity)));
     return [...map.entries()].sort((a, b) => b[1] - a[1]).slice(0, 3).map(([id, sold]) => ({ ...(products.find(p => p.id === id) || { name: id }), sold }));
   }, [orders, products]);
 

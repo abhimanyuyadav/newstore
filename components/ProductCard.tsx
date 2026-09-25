@@ -1,12 +1,12 @@
 "use client";
 
-import Image from "next/image";
+import Image from "@/components/StoreImage";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { Heart, Star } from "lucide-react";
 import { useCart } from "@/components/CartContext";
-import { getSiteSettings, buildWhatsappLink, getWishlist, toggleWishlist, getReviews } from "@/lib/data";
+import { getSiteSettings, getCategories, buildWhatsappLink, getWishlist, toggleWishlist, getReviews } from "@/lib/data";
 import { Product } from "@/lib/types";
 
 const IMAGE_PLACEHOLDER = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='600' height='400'%3E%3Crect width='600' height='400' fill='%23e5e7eb'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' fill='%23717171' font-size='24'%3ENo image%3C/text%3E%3C/svg%3E";
@@ -21,7 +21,8 @@ export default function ProductCard({ product, disabled }: { product: Product; d
 
   const imageUrl = imageSrc || IMAGE_PLACEHOLDER;
   const isDataUrl = imageUrl.startsWith("data:");
-  const available = product.inStock && !disabled;
+  const categoryDisabled = disabled || getCategories().some(category => category.id === product.category && !category.enabled);
+  const available = product.inStock && !categoryDisabled;
   const defaultSize = product.sizes?.[0] || "One Size";
   const defaultVariants = product.variants?.reduce((acc, variant) => {
     acc[variant.name] = variant.values?.[0] ?? "";
@@ -29,6 +30,7 @@ export default function ProductCard({ product, disabled }: { product: Product; d
   }, {} as Record<string, string>);
 
   const addToCart = () => {
+    if (!available) return;
     dispatch({
       type: "ADD",
       item: {
@@ -93,7 +95,7 @@ export default function ProductCard({ product, disabled }: { product: Product; d
           <span>•</span>
           <span>{productReviews.count} review{productReviews.count === 1 ? "" : "s"}</span>
         </div>
-        {disabled ? (
+        {categoryDisabled ? (
           <p className="text-xs text-orange-600 mt-1">Category coming soon</p>
         ) : !product.inStock ? (
           <p className="text-xs text-red-500 mt-1">Out of stock</p>
@@ -111,7 +113,7 @@ export default function ProductCard({ product, disabled }: { product: Product; d
           </button>
           <button type="button" onClick={buyNow} disabled={!available}
             className={`w-full rounded-2xl px-3 py-2 text-sm font-semibold transition ${available ? "bg-amber-500 text-black hover:bg-amber-400" : "bg-gray-200 text-gray-500 cursor-not-allowed"}`}>
-            Buy with eSewa
+            {settings.esewaEnabled ? "Buy with eSewa" : "Checkout"}
           </button>
         </div>
       </div>

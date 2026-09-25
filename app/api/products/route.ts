@@ -1,38 +1,23 @@
-import { NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || process.env.SUPABASE_ANON_KEY || '';
-
-const supabase = supabaseUrl && supabaseKey ? createClient(supabaseUrl, supabaseKey) : null;
-
+import { NextResponse } from "next/server";
+import { defaultProducts } from "@/lib/data";
+import { readValue, updateValue } from "@/lib/server/store";
+import type { Product } from "@/lib/types";
+import { failure, jsonBody, requireAdmin } from "@/lib/server/http";
+import { validateSharedValue } from "@/lib/server/catalog";
 export async function GET() {
-  try {
-    if (!supabase) {
-      return NextResponse.json([]);
-    }
-
-    const { data, error } = await supabase.from('products').select('*');
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-    return NextResponse.json(data);
-  } catch (err) {
-    return NextResponse.json({ error: 'Failed to fetch products' }, { status: 500 });
-  }
+  try { return NextResponse.json(await readValue("9teen_products", defaultProducts)); } catch (error) { return failure(error); }
 }
-
 export async function POST(req: Request) {
   try {
-    if (!supabase) {
-      return NextResponse.json({ inserted: 0, fallback: true, message: 'Supabase not configured. Data was not persisted remotely.' });
-    }
-
-    const body = await req.json();
-    // Expect an array of products or a single product
+    await requireAdmin();
+    const body = await jsonBody(req);
     const rows = Array.isArray(body) ? body : [body];
-    const { data, error } = await supabase.from('products').upsert(rows);
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-    return NextResponse.json({ inserted: (data as any)?.length ?? 0 });
-  } catch (err) {
-    return NextResponse.json({ error: 'Failed to save products' }, { status: 500 });
-  }
+    validateSharedValue("9teen_products", rows);
+    await updateValue<Product[]>("9teen_products", defaultProducts, products => {
+      const merged = new Map(products.map(product => [product.id, product]));
+      rows.forEach(product => merged.set(product.id, product));
+      return [...merged.values()];
+    });
+    return NextResponse.json({ success: true, inserted: rows.length });
+  } catch (error) { return failure(error); }
 }

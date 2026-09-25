@@ -1,5 +1,6 @@
 import { Playfair_Display, DM_Sans } from "next/font/google";
 import "./globals.css";
+import DataProvider from "@/components/DataProvider";
 import { CartProvider } from "@/components/CartContext";
 
 export const metadata = {
@@ -19,7 +20,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link rel="manifest" href="/site.webmanifest" />
       </head>
       <body className={`${playfair.variable} ${dmSans.variable}`}>
-        <CartProvider>{children}</CartProvider>
+        <DataProvider><CartProvider>{children}</CartProvider></DataProvider>
       </body>
     </html>
   );

@@ -13,7 +13,7 @@ export default function Footer() {
     return () => window.removeEventListener(DATA_CHANGED_EVENT, loadSettings);
   }, []);
 
-  const whatsappUrl = `https://wa.me/${settings.whatsappNumber.replace(/[^0-9]/g, "")}?text=${encodeURIComponent(settings.whatsappMessage)}`;
+  const whatsappUrl = `https://wa.me/${settings.whatsappNumber.replace(/[^0-9]/g, "")}?text=${encodeURIComponent("Hi, I need help with an order from " + settings.siteName + ".")}`;
 
   return (
     <footer className="bg-[#080808] text-white border-t border-white/10 mt-12">

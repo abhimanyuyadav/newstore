@@ -1,4 +1,5 @@
 "use client";
+import { uploadImage } from "@/lib/uploadImage";
 import { useEffect, useRef, useState } from "react";
 import { getSiteSettings, saveSiteSettings, resetProducts, resetSiteSettings, resetOrders, resetCategories, resetAllData } from "@/lib/data";
 import { postProducts, postOrders, postUsers } from "@/utils/api/admin";
@@ -58,8 +59,8 @@ export default function AdminSettingsPage() {
   const [sectionSpecialOfferTitle, setSectionSpecialOfferTitle] = useState(settings.sectionSpecialOfferTitle);
   const [sectionSpecialOfferButtonLabel, setSectionSpecialOfferButtonLabel] = useState(settings.sectionSpecialOfferButtonLabel);
   const [sectionToAdd, setSectionToAdd] = useState("");
-  const [adminUsername, setAdminUsername] = useState(settings.adminUsername);
-  const [adminPassword, setAdminPassword] = useState(settings.adminPassword);
+  const adminUsername = "";
+  const adminPassword = "";
   const [footerContactEmail, setFooterContactEmail] = useState(settings.footerContactEmail);
   const [footerContactPhone, setFooterContactPhone] = useState(settings.footerContactPhone);
   const [footerContactLocation, setFooterContactLocation] = useState(settings.footerContactLocation);
@@ -79,13 +80,8 @@ export default function AdminSettingsPage() {
   const [resetMessage, setResetMessage] = useState("");
 
   const readFileToDataUrl = async (file: File) => {
-    if (!file.type.startsWith("image/")) return null;
-    const reader = new FileReader();
-    return await new Promise<string | null>(resolve => {
-      reader.onload = () => resolve(reader.result as string);
-      reader.onerror = () => resolve(null);
-      reader.readAsDataURL(file);
-    });
+    try { return await uploadImage(file); }
+    catch (error) { setResetMessage(error instanceof Error ? error.message : "Upload failed"); return null; }
   };
 
   const handleHeroImageUpload = async (files: FileList | null) => {
@@ -186,7 +182,8 @@ export default function AdminSettingsPage() {
   });
 
   useEffect(() => {
-    saveSiteSettings(buildSettingsPayload());
+    const timer = setTimeout(() => { void saveSiteSettings(buildSettingsPayload()); }, 500);
+    return () => clearTimeout(timer);
   }, [
     siteName,
     tagline,
@@ -275,8 +272,8 @@ export default function AdminSettingsPage() {
     setSectionOrder(prev => prev.filter(item => item !== key));
   };
 
-  function handleSave() {
-    saveSiteSettings(buildSettingsPayload());
+  async function handleSave() {
+    try { await saveSiteSettings(buildSettingsPayload()); } catch { setSaved(false); return; }
     setSaved(true);
     setResetMessage("");
     setTimeout(() => setSaved(false), 2000);
@@ -285,10 +282,10 @@ export default function AdminSettingsPage() {
   function handleReset(action: "products" | "settings" | "orders" | "categories" | "all") {
     if (action === "products") resetProducts();
     if (action === "settings") resetSiteSettings();
-    if (action === "orders") resetOrders();
+    if (action === "orders") { resetOrders(); return; }
     if (action === "categories") resetCategories();
     if (action === "all") resetAllData();
-    setResetMessage(action === "all" ? "All data cleared, reload the page to refresh." : `${action.charAt(0).toUpperCase() + action.slice(1)} reset completed.`);
+    setResetMessage(action === "all" ? "Catalog settings reset. Orders and accounts were preserved." : `${action.charAt(0).toUpperCase() + action.slice(1)} reset completed.`);
   }
 
   return (
@@ -373,16 +370,7 @@ export default function AdminSettingsPage() {
               <h2 className="text-xl font-semibold">Admin Access</h2>
             </div>
             <div className="space-y-4">
-              {[
-                { label: "Admin Username", value: adminUsername, setter: setAdminUsername },
-                { label: "Admin Password", value: adminPassword, setter: setAdminPassword, type: "password" },
-              ].map(field => (
-                <label key={field.label} className="block text-sm text-white/70">
-                  <span className="block mb-2 text-xs uppercase tracking-[0.25em] text-white/50">{field.label}</span>
-                  <input type={field.type || "text"} value={field.value} onChange={e => field.setter(e.target.value)}
-                    className="w-full rounded-2xl border border-white/10 bg-[#050505] px-3 py-3 text-white focus:outline-none focus:ring-2 focus:ring-red-400" />
-                </label>
-              ))}
+              <p className="text-sm text-white/70">Administrator credentials are managed securely in the server environment. Contact the site owner to change access.</p>
             </div>
           </div>
 
@@ -650,7 +638,7 @@ export default function AdminSettingsPage() {
             <button type="button" onClick={() => handleReset("all")}
               className="rounded-3xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-left text-sm text-red-100 hover:bg-red-500/20 transition">
               <p className="font-semibold">Reset All Data</p>
-              <p className="text-xs text-red-100/80 mt-1">Clear products, settings, orders, coupons, reviews, and the cart.</p>
+              <p className="text-xs text-red-100/80 mt-1">Restore the demo catalog and settings. Orders and customer accounts are preserved.</p>
             </button>
           </div>
           {resetMessage && <p className="mt-4 text-sm text-white/70">{resetMessage}</p>}

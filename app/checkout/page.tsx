@@ -3,7 +3,7 @@ import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import Navbar from "@/components/Navbar";
 import { useCart } from "@/components/CartContext";
-import { saveOrder, getSiteSettings, formatWhatsappMessage, formatEmailSubject, formatEmailBody, buildMailtoLink, getCurrentUser } from "@/lib/data";
+import { saveOrder, getSiteSettings, formatWhatsappMessage, formatEmailSubject, formatEmailBody, buildMailtoLink, buildWhatsappLink, getCurrentUser } from "@/lib/data";
 import { ArrowLeft, Loader2 } from "lucide-react";
 
 export default function CheckoutPage() {
@@ -12,13 +12,17 @@ export default function CheckoutPage() {
   const formRef = useRef<HTMLFormElement>(null);
   const [esewaData, setEsewaData] = useState<Record<string, string> | null>(null);
   const [loading, setLoading] = useState(false);
-  const [paymentMethod, setPaymentMethod] = useState<"esewa"|"whatsapp">("esewa");
+  const [error, setError] = useState("");
+  const requestId = useRef<string | null>(null);
+  const [paymentMethod, setPaymentMethod] = useState<"esewa"|"whatsapp">(settings.esewaEnabled === false ? "whatsapp" : "esewa");
   const [whatsappMessage, setWhatsappMessage] = useState(settings.whatsappMessage);
   const paymentOptions = [
     ...(settings.esewaEnabled !== false ? [{ value: "esewa" as const, label: settings.esewaLabel || "eSewa" }] : []),
     { value: "whatsapp" as const, label: settings.footerWhatsAppButtonLabel || "WhatsApp" },
   ];
   const [form, setForm] = useState({ name: "", phone: "", email: "", address: "", city: "Kathmandu" });
+
+  useEffect(() => { requestId.current = null; }, [form, items, paymentMethod, whatsappMessage]);
 
   useEffect(() => {
     const currentUser = getCurrentUser();
@@ -35,11 +39,14 @@ export default function CheckoutPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (items.length === 0) return;
-    setLoading(true);
+    if (items.length === 0 || loading) return;
+    setLoading(true); setError("");
+    try {
+    requestId.current ||= crypto.randomUUID();
     const orderId = `19T-${Date.now()}`;
     const order = {
       id: orderId,
+      requestId: requestId.current,
       items,
       customer: form,
       total,
@@ -49,18 +56,11 @@ export default function CheckoutPage() {
       whatsappMessage: paymentMethod === "whatsapp" ? whatsappMessage : undefined,
       createdAt: new Date().toISOString(),
     };
-    saveOrder(order);
-
-    if (settings.notificationEmail && form.email) {
-      const emailSubject = formatEmailSubject(settings, order);
-      const emailBody = formatEmailBody(settings, order);
-      const mailto = buildMailtoLink(form.email, emailSubject, emailBody);
-      window.open(mailto, "_blank");
-    }
+    const savedOrder = await saveOrder(order);
 
     if (paymentMethod === "esewa") {
       try {
-        const res = await fetch("/api/esewa", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ amount: total, orderId }) });
+        const res = await fetch("/api/esewa", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ orderId: savedOrder.id }) });
         const data = await res.json();
         if (!res.ok || typeof data !== "object" || !data?.esewa_url) {
           const message = data?.error || "Invalid eSewa response.";
@@ -70,13 +70,14 @@ export default function CheckoutPage() {
         setEsewaData({ ...fields, _url: esewa_url });
       } catch (error) {
         console.error("Checkout eSewa error:", error);
-        alert(`Payment setup failed: ${error instanceof Error ? error.message : "Please try again."}`);
+        setError(error instanceof Error ? error.message : "Please try again.");
         setLoading(false);
       }
     } else {
-      const whatsappText = formatWhatsappMessage(settings, order);
-      window.location.href = `https://wa.me/${settings.whatsappNumber}?text=${encodeURIComponent(whatsappText)}`;
+      const whatsappText = formatWhatsappMessage(settings, savedOrder);
+      window.location.href = buildWhatsappLink(settings.whatsappNumber, whatsappText);
     }
+    } catch (error) { setError(error instanceof Error ? error.message : "Unable to place order"); setLoading(false); }
   };
 
   useEffect(() => {
@@ -93,6 +94,7 @@ export default function CheckoutPage() {
         <h1 className="text-2xl font-bold mb-6">Checkout</h1>
         <div className="grid grid-cols-1 md:grid-cols-5 gap-5">
           <form onSubmit={handleSubmit} className="md:col-span-3 space-y-4">
+            {error && <p role="alert" className="bg-red-50 text-red-700 p-3 rounded-xl">{error}</p>}
             <div className="bg-white rounded-xl p-4 border border-gray-100 space-y-3">
               <h2 className="font-bold">Delivery Information</h2>
               {[
@@ -103,8 +105,8 @@ export default function CheckoutPage() {
                 { key: "city", label: "City", type: "text", placeholder: "Kathmandu" },
               ].map(f => (
                 <div key={f.key}>
-                  <label className="block text-xs font-semibold text-gray-500 mb-1 uppercase tracking-wide">{f.label}</label>
-                  <input required={f.req !== false} type={f.type} placeholder={f.placeholder}
+                  <label htmlFor={f.key} className="block text-xs font-semibold text-gray-500 mb-1 uppercase tracking-wide">{f.label}</label>
+                  <input id={f.key} required={f.req !== false} type={f.type} placeholder={f.placeholder}
                     value={form[f.key as keyof typeof form]}
                     onChange={e => setForm({ ...form, [f.key]: e.target.value })}
                     className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#f97316]" />
@@ -137,7 +139,7 @@ export default function CheckoutPage() {
             </div>
             <button type="submit" disabled={loading || items.length === 0}
               className="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-4 rounded-xl text-sm flex items-center justify-center gap-2 transition-colors disabled:opacity-50">
-              {loading ? <><Loader2 className="w-4 h-4 animate-spin" />Preparing payment...</> : `Pay Rs ${total.toLocaleString()} via ${paymentMethod === "esewa" ? (settings.esewaLabel || "eSewa") : (settings.footerWhatsAppButtonLabel || "WhatsApp")}`}
+              {loading ? <><Loader2 className="w-4 h-4 animate-spin" />Preparing your order...</> : paymentMethod === "esewa" ? `Pay Rs ${total.toLocaleString()} via ${settings.esewaLabel || "eSewa"}` : `Place order for Rs ${total.toLocaleString()} via WhatsApp`}
             </button>
           </form>
           <div className="md:col-span-2 bg-white rounded-xl border border-gray-100 p-4 h-fit">

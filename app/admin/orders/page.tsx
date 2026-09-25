@@ -1,9 +1,12 @@
 "use client";
-import { getOrders } from "@/lib/data";
+import { useState } from "react";
+import { getOrders, saveOrders } from "@/lib/data";
 import { Package, Clock, CheckCircle, ArrowRight } from "lucide-react";
 
 export default function AdminOrdersPage() {
-  const orders = getOrders();
+  const [orders, setOrders] = useState(getOrders);
+  const [error, setError] = useState("");
+  const [saving, setSaving] = useState(false);
 
   return (
     <div className="min-h-screen bg-[#090909] text-white">
@@ -19,6 +22,7 @@ export default function AdminOrdersPage() {
           </button>
         </div>
 
+        {error && <p role="alert" className="text-red-400">{error}</p>}
         <div className="mt-6 grid gap-4">
           {orders.length === 0 ? (
             <div className="rounded-3xl border border-white/10 bg-white/5 p-6 text-white/70">No orders yet.</div>
@@ -45,6 +49,7 @@ export default function AdminOrdersPage() {
                   <p className="text-xs uppercase tracking-[0.35em] text-white/50">Total</p>
                   <p className="mt-2 text-xl font-semibold">NPR {order.total.toLocaleString()}</p>
                   <p className="text-sm text-white/50">{order.paymentStatus}</p>
+                  <label className="block mt-3">Order status<select aria-label={"Status for " + order.id} disabled={saving} value={order.status} className="block bg-black p-2 rounded-lg" onChange={async e => { const next = orders.map(o => o.id === order.id ? { ...o, status:e.target.value as typeof o.status } : o); setSaving(true); setError(""); try { await saveOrders(next); setOrders(next); } catch { setError("Unable to save order status"); } finally { setSaving(false); } }}>{["pending","processing","shipped","delivered","cancelled"].map(s => <option key={s} value={s}>{s}</option>)}</select></label>
                 </div>
                 <div className="rounded-3xl border border-white/10 bg-[#050505] p-4">
                   <p className="text-xs uppercase tracking-[0.35em] text-white/50">Message</p>

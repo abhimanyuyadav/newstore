@@ -2,6 +2,8 @@
 import { useEffect, useMemo, useState } from "react";
 import type { Product } from "@/lib/types";
 import { getOrders, getProducts } from "@/lib/data";
+import { weeklySales } from "@/lib/analytics";
+import Link from "next/link";
 import { ChartBar, ShoppingBag, Users, Package, ArrowUpRight, Clock, ClipboardList } from "lucide-react";
 
 export default function AdminDashboardPage() {
@@ -25,14 +27,16 @@ export default function AdminDashboardPage() {
     return () => clearInterval(interval);
   }, []);
 
-  const totalRevenue = useMemo(() => orders.reduce((sum, order) => sum + order.total, 0), [orders]);
+  const totalRevenue = useMemo(() => orders.filter(order => order.paymentStatus === "paid" && order.status !== "cancelled").reduce((sum, order) => sum + order.total, 0), [orders]);
   const totalCustomers = useMemo(() => new Set(orders.map(order => order.customer.phone || order.customer.email)).size, [orders]);
   const totalOrders = orders.length;
   const totalProducts = products.length;
+  const week = weeklySales(orders);
+  const maxDailySales = Math.max(1, ...week.map(day => day.amount));
 
   const salesByCategory = useMemo(() => {
     const map = new Map<string, number>();
-    orders.forEach(order => order.items.forEach(item => {
+    orders.filter(order => order.paymentStatus === "paid" && order.status !== "cancelled").forEach(order => order.items.forEach(item => {
       const product = products.find(p => p.id === item.id);
       if (!product) return;
       map.set(product.category, (map.get(product.category) || 0) + item.quantity);
@@ -42,7 +46,7 @@ export default function AdminDashboardPage() {
 
   const topProducts = useMemo(() => {
     const counts = new Map<string, number>();
-    orders.forEach(order => order.items.forEach(item => counts.set(item.id, (counts.get(item.id) || 0) + item.quantity)));
+    orders.filter(order => order.paymentStatus === "paid" && order.status !== "cancelled").forEach(order => order.items.forEach(item => counts.set(item.id, (counts.get(item.id) || 0) + item.quantity)));
     return [...counts.entries()]
       .sort((a, b) => b[1] - a[1])
       .slice(0, 3)
@@ -80,7 +84,6 @@ export default function AdminDashboardPage() {
                 <Icon className="w-5 h-5 text-red-400" />
               </div>
               <p className="text-3xl font-black">{value}</p>
-              <p className="text-xs text-white/50 mt-2">+9.4% from yesterday</p>
             </div>
           ))}
         </div>
@@ -92,16 +95,15 @@ export default function AdminDashboardPage() {
                 <p className="text-xs uppercase tracking-[0.35em] text-white/50">Sales Overview</p>
                 <h2 className="text-xl font-bold mt-2">Weekly performance</h2>
               </div>
-              <span className="inline-flex items-center gap-2 rounded-full bg-red-500/10 px-3 py-2 text-xs uppercase tracking-[0.2em] text-red-300">Live</span>
+              <span className="inline-flex items-center gap-2 rounded-full bg-red-500/10 px-3 py-2 text-xs uppercase tracking-[0.2em] text-red-300">Last 7 days</span>
             </div>
             <div className="space-y-4">
-              {['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map((day, index) => {
-                const amount = 20000 + index * 5000;
+              {week.map(({ day, amount }) => {
                 return (
                   <div key={day} className="flex items-center gap-3">
                     <span className="w-12 text-xs text-white/60">{day}</span>
                     <div className="h-3 flex-1 rounded-full bg-white/10">
-                      <div className="h-full rounded-full bg-red-400" style={{ width: `${40 + index * 8}%` }} />
+                      <div className="h-full rounded-full bg-red-400" style={{ width: `${amount / maxDailySales * 100}%` }} />
                     </div>
                     <span className="w-20 text-right text-xs text-white/70">NPR {amount.toLocaleString()}</span>
                   </div>
@@ -116,7 +118,7 @@ export default function AdminDashboardPage() {
                 <p className="text-xs uppercase tracking-[0.35em] text-white/50">Recent Orders</p>
                 <h2 className="text-xl font-bold mt-2">Latest sales</h2>
               </div>
-              <span className="text-xs text-white/50">View All</span>
+              <Link href="/admin/orders" className="text-xs text-white/50">View All</Link>
             </div>
             <div className="space-y-4">
               {orders.slice(0, 5).map(order => (

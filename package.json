@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "lint": "tsc --noEmit",
-    "start": "node .next/standalone/server.js"
+    "start": "next start",
+    "test": "node --test tests/*.test.cjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.3",
@@ -22,8 +23,14 @@
     "@types/node": "^22.0.0",
     "@types/react": "^18.3.1",
     "@types/react-dom": "^18.3.1",
-    "postcss": "^8.4.49",
+    "postcss": "^8.5.23",
     "tailwindcss": "^4.0.0",
     "typescript": "^5.6.3"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "overrides": {
+    "postcss": "^8.5.23"
   }
 }

@@ -1,11 +1,8 @@
 "use client";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { adminLogin, clearAdminLockoutState, getAdminLockoutState, getSiteSettings, isAdminLoggedIn, saveAdminLockoutState } from "@/lib/data";
+import { adminLogin, isAdminLoggedIn } from "@/lib/data";
 import { Lock, Eye, EyeOff } from "lucide-react";
-
-const MAX_ATTEMPTS = 5;
-const LOCKOUT_TIME = 15 * 60 * 1000; // 15 minutes
 
 export default function AdminLogin() {
   const router = useRouter();
@@ -14,100 +11,15 @@ export default function AdminLogin() {
   const [show, setShow] = useState(false);
   const [err, setErr] = useState("");
   const [loading, setLoading] = useState(false);
-  const [remainingTime, setRemainingTime] = useState(0);
+  const remainingTime = 0;
 
-  useEffect(() => {
-    const loadLockoutState = async () => {
-      if (isAdminLoggedIn()) {
-        router.replace("/admin/dashboard");
-        return;
-      }
-
-      const lockoutData = await getAdminLockoutState();
-      if (lockoutData) {
-        const { timestamp } = lockoutData;
-        const now = Date.now();
-        const elapsed = now - timestamp;
-
-        if (elapsed < LOCKOUT_TIME) {
-          setRemainingTime(Math.ceil((LOCKOUT_TIME - elapsed) / 1000));
-          setErr(`Too many failed attempts. Try again in ${Math.ceil((LOCKOUT_TIME - elapsed) / 1000)} seconds.`);
-        } else {
-          await clearAdminLockoutState();
-        }
-      }
-    };
-
-    void loadLockoutState();
-  }, [router]);
-
-  useEffect(() => {
-    if (remainingTime <= 0) return;
-    const timer = setInterval(() => {
-      setRemainingTime(t => {
-        if (t <= 1) {
-          clearInterval(timer);
-          setErr("");
-          return 0;
-        }
-        return t - 1;
-      });
-    }, 1000);
-    return () => clearInterval(timer);
-  }, [remainingTime]);
-
+  useEffect(() => { if (isAdminLoggedIn()) router.replace("/admin/dashboard"); }, [router]);
   async function login(e: React.FormEvent) {
-    e.preventDefault();
-    
-    if (!username || !pw) {
-      setErr("Username and password required");
-      return;
-    }
-
-    if (remainingTime > 0) {
-      setErr("Account temporarily locked");
-      return;
-    }
-
-    const settings = getSiteSettings();
-    
-    // Validate credentials are configured
-    if (!settings.adminUsername || !settings.adminPassword) {
-      setErr("Admin credentials not configured");
-      return;
-    }
-
-    setLoading(true);
-
-    const existingLockout = await getAdminLockoutState();
-    let attempts = existingLockout?.attempts ?? 0;
-
-    if (adminLogin(username, pw)) {
-      await clearAdminLockoutState();
-      
-      // Set secure admin session cookie
-      document.cookie = "admin_session=1; path=/; max-age=86400; secure; samesite=strict";
-      
-      setErr("");
-      router.push("/admin/dashboard");
-    } else {
-      attempts++;
-
-      if (attempts >= MAX_ATTEMPTS) {
-        const lockout = {
-          timestamp: Date.now(),
-          attempts,
-        };
-        await saveAdminLockoutState(lockout);
-        setRemainingTime(Math.ceil(LOCKOUT_TIME / 1000));
-        setErr("Too many failed attempts. Account locked for 15 minutes.");
-      } else {
-        await saveAdminLockoutState({ timestamp: Date.now(), attempts });
-        setErr(`Incorrect credentials. ${MAX_ATTEMPTS - attempts} attempts remaining.`);
-      }
-    }
-
-    setLoading(false);
+    e.preventDefault(); if (loading) return;
+    setLoading(true); setErr("");
+    try { await adminLogin(username, pw); router.push("/admin/dashboard"); }
+    catch (error) { setErr(error instanceof Error ? error.message : "Unable to sign in"); }
+    finally { setLoading(false); }
   }
 
   return (

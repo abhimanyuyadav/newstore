@@ -10,7 +10,7 @@ export interface Product {
 }
 export interface CartItem { id: string; name: string; price: number; image: string; size: string; quantity: number; variantSelections?: Record<string, string>; }
 export interface Order {
-  id: string; items: CartItem[];
+  id: string; ownerId?: string; requestId?: string; items: CartItem[];
   customer: { name: string; phone: string; email: string; address: string; city: string; };
   total: number; status: "pending"|"processing"|"shipped"|"delivered"|"cancelled";
   paymentStatus: "pending"|"paid"|"failed";
@@ -23,7 +23,7 @@ export interface UserAccount {
   name: string;
   email: string;
   phone: string;
-  password: string;
+  password?: string;
   address: string;
   city: string;
   createdAt: string;

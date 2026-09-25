@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useParams, notFound, useRouter } from "next/navigation";
-import Image from "next/image";
+import Image from "@/components/StoreImage";
 import Link from "next/link";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -40,6 +40,14 @@ export default function ProductPage() {
   const [variantSelections, setVariantSelections] = useState<Record<string, string>>({});
   const settings = getSiteSettings();
 
+  useEffect(() => {
+    const loadReviews = () => setReviews(getReviews().filter(review => review.productId === productId && review.status === "approved"));
+    loadReviews();
+    window.addEventListener(DATA_CHANGED_EVENT, loadReviews);
+    return () => window.removeEventListener(DATA_CHANGED_EVENT, loadReviews);
+  }, [productId]);
+
+
   if (!hydrated) {
     return <div className="min-h-screen bg-[#fafafa] flex items-center justify-center"><div className="text-sm text-gray-500">Loading product…</div></div>;
   }
@@ -62,14 +70,9 @@ export default function ProductPage() {
   const categoryDisabled = category ? !category.enabled : false;
   const { id, name, price, image, variants } = product;
 
-  useEffect(() => {
-    const loadReviews = () => setReviews(getReviews().filter(review => review.productId === productId && review.status === "approved"));
-    loadReviews();
-    window.addEventListener(DATA_CHANGED_EVENT, loadReviews);
-    return () => window.removeEventListener(DATA_CHANGED_EVENT, loadReviews);
-  }, [productId]);
 
   function addToCart() {
+    if (!product?.inStock || categoryDisabled) return;
     if (!size) { alert("Please select a size"); return; }
     if (variants) {
       for (const variant of variants) {
@@ -82,6 +85,7 @@ export default function ProductPage() {
   }
 
   function buyNow() {
+    if (!product?.inStock || categoryDisabled) return;
     if (!size) { alert("Please select a size"); return; }
     if (variants) {
       for (const variant of variants) {
@@ -93,13 +97,13 @@ export default function ProductPage() {
   }
   const related = products.filter(p => p.category === product.category && p.id !== product.id).slice(0, 4);
 
-  function handleReviewSubmit(e: React.FormEvent) {
+  async function handleReviewSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!reviewForm.name.trim() || !reviewForm.comment.trim()) {
       alert("Please enter your name and a review message.");
       return;
     }
-    addReview({
+    try { await addReview({
       id: `r${Date.now()}${Math.floor(Math.random() * 1000)}`,
       productId: productId,
       name: reviewForm.name.trim(),
@@ -108,6 +112,7 @@ export default function ProductPage() {
       status: "pending",
       date: new Date().toISOString().slice(0, 10),
     });
+    } catch (error) { alert(error instanceof Error ? error.message : "Unable to submit review"); return; }
     setReviewSubmitted(true);
     setReviewForm({ name: "", rating: 5, comment: "" });
   }
@@ -176,7 +181,7 @@ export default function ProductPage() {
                 Message on WhatsApp
               </button>
               <button onClick={buyNow} disabled={!product.inStock || categoryDisabled} className="w-full py-3.5 rounded-xl font-bold text-sm bg-amber-500 hover:bg-amber-400 text-black text-center transition-colors disabled:opacity-50">
-                Buy Now with eSewa
+                {settings.esewaEnabled ? "Buy Now with eSewa" : "Checkout"}
               </button>
             </div>
             <div className="mt-4 p-3 bg-white rounded-xl border border-gray-100 text-xs text-gray-500 flex flex-wrap gap-3">

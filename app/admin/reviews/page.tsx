@@ -22,7 +22,7 @@ export default function AdminReviewsPage() {
             <h1 className="text-3xl font-black mt-3">Review Manager</h1>
             <p className="text-sm text-white/70 mt-2">Approve or reject product reviews before they show in the store.</p>
           </div>
-          <button onClick={async () => { saveReviews(reviews); setSaved(true); setTimeout(() => setSaved(false), 2000); }}
+          <button onClick={async () => { try { await saveReviews(reviews); } catch { setSaved(false); return; } setSaved(true); setTimeout(() => setSaved(false), 2000); }}
             className="inline-flex items-center gap-2 rounded-full bg-red-500 px-4 py-2 text-sm font-semibold text-white hover:bg-red-400 transition">
             <Save className="w-4 h-4" /> Save Reviews
           </button>

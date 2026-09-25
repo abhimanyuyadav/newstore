@@ -2,45 +2,28 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useCart } from "@/components/CartContext";
-import { getLastOrder, getOrders, saveOrders } from "@/lib/data";
-import { CheckCircle, Package } from "lucide-react";
-
+import { saveLastOrder } from "@/lib/data";
+import type { Order } from "@/lib/types";
 export default function PaymentSuccess() {
   const { dispatch } = useCart();
-  const [order, setOrder] = useState<any>(null);
+  const [order,setOrder] = useState<Order|null>(null);
+  const [error,setError] = useState("");
+  const [attempt,setAttempt] = useState(0);
   useEffect(() => {
-    const last = getLastOrder();
-    if (last) {
-      const o: any = { ...last, paymentStatus: "paid", status: "processing" };
-      setOrder(o);
-      const orders = getOrders();
-      const idx = orders.findIndex((x: any) => x.id === o.id);
-      if (idx !== -1) {
-        const nextOrders = [...orders];
-        nextOrders[idx] = { ...last, paymentStatus: "paid" as const, status: "processing" as const };
-        saveOrders(nextOrders);
-      }
-    }
-    dispatch({ type: "CLEAR" });
-  }, [dispatch]);
-
-  return (
-    <div className="min-h-screen bg-green-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl p-8 max-w-md w-full text-center shadow-lg">
-        <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4"><CheckCircle className="w-8 h-8 text-green-500" /></div>
-        <h1 className="text-2xl font-bold text-green-600 mb-2">Payment Successful!</h1>
-        <p className="text-gray-500 text-sm mb-5">Your 9TEEN order has been confirmed.</p>
-        {order && <div className="bg-gray-50 rounded-xl p-4 mb-5">
-          <p className="text-xs text-gray-400 mb-1">Order ID</p>
-          <p className="font-mono font-bold text-sm">{order.id}</p>
-          <p className="text-xs text-gray-400 mt-2 mb-1">Total Paid</p>
-          <p className="font-bold">Rs {order.total?.toLocaleString()}</p>
-        </div>}
-        <div className="flex flex-col gap-2">
-          <Link href="/track-order" className="bg-black text-white py-3 rounded-xl font-semibold text-sm hover:bg-black transition-colors flex items-center justify-center gap-2"><Package className="w-4 h-4" />Track My Order</Link>
-          <Link href="/" className="bg-gray-100 text-gray-700 py-3 rounded-xl font-semibold text-sm hover:bg-gray-200 transition-colors">Continue Shopping</Link>
-        </div>
-      </div>
-    </div>
-  );
+    let cancelled = false;
+    const orderId = new URLSearchParams(window.location.search).get("orderId");
+    if (!orderId) { setError("No payment reference was provided."); return; }
+    setError("");
+    fetch("/api/esewa/verify",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({orderId})})
+      .then(async r => { const value = await r.json(); if (!r.ok) throw new Error(value.error || "Unable to verify payment"); return value; })
+      .then(value => { if (!cancelled) { setOrder(value); saveLastOrder(value); dispatch({type:"CLEAR"}); } })
+      .catch(e => { if (!cancelled) setError(e.message); });
+    return () => { cancelled = true; };
+  },[dispatch,attempt]);
+  return <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4"><div className="bg-white rounded-2xl p-8 max-w-md w-full text-center shadow-lg">
+    <h1 className="text-2xl font-bold mb-4">{order ? "Payment confirmed" : error ? "Payment not confirmed" : "Verifying payment…"}</h1>
+    {error && <><p role="alert" className="text-red-600 mb-4">{error}</p><button className="underline mb-4" onClick={() => setAttempt(n=>n+1)}>Retry verification</button></>}
+    {order && <p className="mb-5">Order {order.id}<br/>Paid: Rs {order.total.toLocaleString()}</p>}
+    <Link href="/track-order" className="block rounded-xl bg-black text-white p-3 mb-3">Track my order</Link><Link href="/cart">Return to cart</Link>
+  </div></div>;
 }

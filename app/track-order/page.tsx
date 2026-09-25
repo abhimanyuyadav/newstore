@@ -17,8 +17,10 @@ export default function TrackOrderPage() {
   const [order, setOrder] = useState<any>(null);
   const [notFound, setNotFound] = useState(false);
 
-  function search() {
-    const orders = getOrders();
+  async function search() {
+    let orders;
+    try { const response = await fetch("/api/orders", { cache: "no-store" }); if (!response.ok) throw new Error(); orders = await response.json() as import("@/lib/types").Order[]; }
+    catch { setOrder(null); setNotFound(true); return; }
     const found = orders.find(o => o.id === orderId.trim());
     if (found) { setOrder(found); setNotFound(false); }
     else { setOrder(null); setNotFound(true); }
@@ -37,7 +39,7 @@ export default function TrackOrderPage() {
       <div className="max-w-2xl mx-auto px-4 py-8">
         <div className="flex gap-2 mb-8">
           <input value={orderId} onChange={e => setOrderId(e.target.value)} onKeyDown={e => e.key === "Enter" && search()}
-            placeholder="Enter Order ID  e.g. 19T-1234567890"
+            aria-label="Order ID" placeholder="Enter Order ID  e.g. 19T-1234567890"
             className="flex-1 border border-gray-200 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-black bg-white" />
           <button onClick={search} className="bg-black hover:bg-black text-white px-5 py-3 rounded-lg font-semibold text-sm flex items-center gap-2 transition-colors">
             <Search className="w-4 h-4" />Track
@@ -50,6 +52,7 @@ export default function TrackOrderPage() {
               <div><p className="text-xs text-gray-400">Order ID</p><p className="font-mono font-bold text-sm">{order.id}</p></div>
               <div className="text-right"><p className="text-xs text-gray-400">Total</p><p className="font-bold">Rs {order.total?.toLocaleString()}</p></div>
             </div>
+            {order.status === "cancelled" && <p className="text-red-600 mb-4">This order has been cancelled.</p>}
             <div className="relative">
               <div className="absolute left-4 top-4 bottom-4 w-0.5 bg-gray-100" />
               <div className="space-y-5">

@@ -1,7 +1,7 @@
 "use client";
-import React, { createContext, useContext, useReducer, useEffect } from "react";
+import React, { createContext, useContext, useReducer, useEffect, useState } from "react";
 import { CartItem } from "@/lib/types";
-import { readSharedValue, writeSharedValue } from "@/lib/convexStore";
+
 
 type State = { items: CartItem[] };
 type Action =
@@ -25,19 +25,20 @@ function matchesItem(item: CartItem, other: { id: string; size: string; variantS
 	return item.id === other.id && item.size === other.size && sameVariantSelections(item.variantSelections, other.variantSelections);
 }
 
-function reducer(state: State, action: Action): State {
+export function reducer(state: State, action: Action): State {
 	switch (action.type) {
 		case "ADD": {
+            if (!Number.isInteger(action.item.quantity) || action.item.quantity < 1 || !Number.isFinite(action.item.price) || action.item.price < 0) return state;
 			const existing = state.items.find(i => matchesItem(i, action.item));
 			if (existing) {
-				return { items: state.items.map(i => matchesItem(i, action.item) ? { ...i, quantity: i.quantity + action.item.quantity } : i) };
+				return { items: state.items.map(i => matchesItem(i, action.item) ? { ...i, quantity: Math.min(99, i.quantity + action.item.quantity) } : i) };
 			}
 			return { items: [...state.items, action.item] };
 		}
 		case "REMOVE":
 			return { items: state.items.filter(i => !matchesItem(i, action)) };
 		case "UPDATE_QTY":
-			return { items: state.items.map(i => matchesItem(i, action) ? { ...i, quantity: action.qty } : i) };
+			return { items: state.items.map(i => matchesItem(i, action) ? { ...i, quantity: Number.isInteger(action.qty) ? Math.max(1, Math.min(99, action.qty)) : i.quantity } : i) };
 		case "CLEAR":
 			return { items: [] };
 		case "INIT":
@@ -54,7 +55,7 @@ const CartContext = createContext<{
 	dispatch: React.Dispatch<Action>;
 }>({ items: [], total: 0, count: 0, dispatch: () => undefined });
 
-function calcTotals(items: CartItem[]) {
+export function calcTotals(items: CartItem[]) {
 	const total = items.reduce((s, i) => s + i.price * i.quantity, 0);
 	const count = items.reduce((s, i) => s + i.quantity, 0);
 	return { total, count };
@@ -62,9 +63,9 @@ function calcTotals(items: CartItem[]) {
 
 async function readStoredCartItems(): Promise<CartItem[]> {
 	try {
-		const raw = await readSharedValue(CART_STORAGE_KEY);
+		const raw = JSON.parse(window.localStorage.getItem(CART_STORAGE_KEY) || "[]");
 		if (Array.isArray(raw)) {
-			return raw as CartItem[];
+			return raw.filter(i => i && typeof i.id === "string" && typeof i.name === "string" && typeof i.image === "string" && typeof i.size === "string" && Number.isFinite(i.price) && i.price >= 0 && Number.isInteger(i.quantity) && i.quantity > 0 && i.quantity <= 99) as CartItem[];
 		}
 	} catch {
 		// ignore invalid storage data
@@ -76,7 +77,7 @@ async function readStoredCartItems(): Promise<CartItem[]> {
 async function persistCartToSharedStorage(items: CartItem[]) {
 	if (typeof window === "undefined") return;
 	try {
-		await writeSharedValue(CART_STORAGE_KEY, items);
+		window.localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(items));
 	} catch {
 		// ignore sync failures
 	}
@@ -84,12 +85,14 @@ async function persistCartToSharedStorage(items: CartItem[]) {
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
 	const [state, dispatch] = useReducer(reducer, initialState);
+	const [loaded, setLoaded] = useState(false);
 
 	useEffect(() => {
 		let mounted = true;
 		void readStoredCartItems().then((items) => {
 			if (mounted) {
 				dispatch({ type: "INIT", items });
+				setLoaded(true);
 			}
 		});
 		return () => {
@@ -98,8 +101,8 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 	}, []);
 
 	useEffect(() => {
-		void persistCartToSharedStorage(state.items);
-	}, [state.items]);
+		if (loaded) void persistCartToSharedStorage(state.items);
+	}, [state.items, loaded]);
 
 	const { total, count } = calcTotals(state.items);
 

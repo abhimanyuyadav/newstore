@@ -39,6 +39,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     }
   }, [router, pathname]);
 
+  if (pathname === "/admin") return <>{children}</>;
   if (!ready) return <div className="min-h-screen bg-[#050505] flex items-center justify-center"><div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin" /></div>;
 
   return (
@@ -57,7 +58,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           ))}
         </nav>
         <div className="px-4 pb-6">
-          <button onClick={() => { adminLogout(); router.push("/admin"); }} className="flex w-full items-center justify-center gap-2 rounded-3xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm font-semibold text-red-300 hover:bg-red-500/15 transition">
+          <button onClick={async () => { try { await adminLogout(); router.push("/admin"); } catch { alert("Unable to sign out. Please retry."); } }} className="flex w-full items-center justify-center gap-2 rounded-3xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm font-semibold text-red-300 hover:bg-red-500/15 transition">
             <LogOut className="w-4 h-4" /> Logout
           </button>
         </div>
@@ -71,13 +72,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           <h1 className="font-semibold text-sm uppercase tracking-[0.2em] text-white/70">{nav.find(n => n.href === pathname)?.label || "Admin"}</h1>
           <div className="ml-auto flex items-center gap-3">
             <div className="relative">
-              <button onClick={async () => {
+              <button disabled={savingAll} onClick={async () => {
                   setSavingAll(true);
                   setMessages([]);
                   const results: Array<{id:number; entity:string; status:"success"|"error"; text:string}> = [];
                   try {
-                    saveAllAdminData();
-                    results.push({ id: 1, entity: 'all', status: 'success', text: 'All data saved to Supabase' });
+                    await saveAllAdminData();
+                    results.push({ id: 1, entity: 'all', status: 'success', text: 'Changes saved' });
                   } catch (err:any) {
                     results.push({ id: 1, entity: 'all', status: 'error', text: err?.message || 'Save failed' });
                   } finally {

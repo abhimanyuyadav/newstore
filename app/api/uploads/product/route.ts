@@ -1,3 +1,4 @@
+import { requireAdmin, sameOrigin, jsonBody, failure } from "@/lib/server/http";
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import crypto from 'crypto';
@@ -24,6 +25,8 @@ function checkUploadLimit(ip: string, limit = 10, windowMs = 3600000): boolean {
 
 export async function POST(req: NextRequest) {
   try {
+    await requireAdmin();
+    sameOrigin(req);
     const ip = req.headers.get('x-forwarded-for') || 'unknown';
     
     if (!checkUploadLimit(ip, 10, 3600000)) {
@@ -33,10 +36,10 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const body = await req.json();
+    const body = await jsonBody(req, 3 * 1024 * 1024);
     const { fileName, fileData } = body || {};
     
-    if (!fileName || !fileData) {
+    if (!fileName || typeof fileData !== 'string') {
       return NextResponse.json(
         { error: 'Missing file data' },
         { status: 400 }
@@ -60,7 +63,7 @@ export async function POST(req: NextRequest) {
     }
 
     const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const SUPABASE_SERVICE_ROLE = process.env.NEXT_SUPABASE_SERVICE_ROLE_KEY;
+    const SUPABASE_SERVICE_ROLE = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_SUPABASE_SERVICE_ROLE_KEY;
     
     if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE) {
       return NextResponse.json(
@@ -124,10 +127,5 @@ export async function POST(req: NextRequest) {
 
     const { data } = supabase.storage.from('product-images').getPublicUrl(path);
     return NextResponse.json({ publicUrl: data?.publicUrl || null });
-  } catch (err: any) {
-    return NextResponse.json(
-      { error: 'Upload service error' },
-      { status: 500 }
-    );
-  }
+  } catch (err: unknown) { return failure(err); }
 }

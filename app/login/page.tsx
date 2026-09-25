@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { loginUser, registerUser, getCurrentUser } from "@/lib/data";
 
 export default function LoginPage() {
@@ -14,36 +14,20 @@ export default function LoginPage() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
-  const currentUser = getCurrentUser();
-  if (currentUser) {
-    router.replace("/account");
-    return null;
-  }
+  const [busy, setBusy] = useState(false);
+  useEffect(() => { if (getCurrentUser()) router.replace("/account"); }, [router]);
 
-  function handleLogin(e: React.FormEvent) {
-    e.preventDefault();
-    const user = loginUser(loginEmail, loginPassword);
-    if (!user) {
-      setError("Invalid email or password.");
-      setSuccess("");
-      return;
-    }
-    setError("");
-    setSuccess("Welcome back! Redirecting to your account...");
-    router.push("/account");
+  async function handleLogin(e: React.FormEvent) {
+    e.preventDefault(); if (busy) return; setBusy(true); setError("");
+    try { await loginUser(loginEmail, loginPassword); router.push("/account"); }
+    catch(e) { setError(e instanceof Error ? e.message : "Sign-in failed"); }
+    finally { setBusy(false); }
   }
-
-  function handleRegister(e: React.FormEvent) {
-    e.preventDefault();
-    const user = registerUser(registerForm);
-    if (!user) {
-      setError("An account with that email already exists.");
-      setSuccess("");
-      return;
-    }
-    setError("");
-    setSuccess("Account created successfully. Redirecting...");
-    router.push("/account");
+  async function handleRegister(e: React.FormEvent) {
+    e.preventDefault(); if (busy) return; setBusy(true); setError("");
+    try { await registerUser(registerForm); router.push("/account"); }
+    catch(e) { setError(e instanceof Error ? e.message : "Registration failed"); }
+    finally { setBusy(false); }
   }
 
   return (
@@ -69,13 +53,13 @@ export default function LoginPage() {
             <div className="space-y-4">
               <label className="block text-sm text-gray-600">
                 Email
-                <input value={loginEmail} onChange={e => setLoginEmail(e.target.value)} className="mt-2 w-full rounded-2xl border border-gray-200 bg-white px-3 py-3" required />
+                <input type="email" autoComplete="email" value={loginEmail} onChange={e => setLoginEmail(e.target.value)} className="mt-2 w-full rounded-2xl border border-gray-200 bg-white px-3 py-3" required />
               </label>
               <label className="block text-sm text-gray-600">
                 Password
                 <input type="password" value={loginPassword} onChange={e => setLoginPassword(e.target.value)} className="mt-2 w-full rounded-2xl border border-gray-200 bg-white px-3 py-3" required />
               </label>
-              <button type="submit" className="w-full rounded-2xl bg-black px-4 py-3 text-sm font-semibold text-white">Login</button>
+              <button disabled={busy} type="submit" className="w-full rounded-2xl bg-black px-4 py-3 text-sm font-semibold text-white">Login</button>
             </div>
           </form>
 
@@ -102,7 +86,7 @@ export default function LoginPage() {
               </label>
               <label className="block text-sm text-gray-600">
                 Password
-                <input type="password" value={registerForm.password} onChange={e => setRegisterForm({ ...registerForm, password: e.target.value })} className="mt-2 w-full rounded-2xl border border-gray-200 bg-white px-3 py-3" required />
+                <input type="password" minLength={8} maxLength={128} autoComplete="new-password" value={registerForm.password} onChange={e => setRegisterForm({ ...registerForm, password: e.target.value })} className="mt-2 w-full rounded-2xl border border-gray-200 bg-white px-3 py-3" required />
               </label>
               <label className="block text-sm text-gray-600">
                 City
@@ -112,7 +96,7 @@ export default function LoginPage() {
                 Address
                 <textarea rows={3} value={registerForm.address} onChange={e => setRegisterForm({ ...registerForm, address: e.target.value })} className="mt-2 w-full rounded-2xl border border-gray-200 bg-white px-3 py-3" required />
               </label>
-              <button type="submit" className="md:col-span-2 w-full rounded-2xl bg-[#f97316] px-4 py-3 text-sm font-semibold text-white">Create Account</button>
+              <button disabled={busy} type="submit" className="md:col-span-2 w-full rounded-2xl bg-[#f97316] px-4 py-3 text-sm font-semibold text-white">Create Account</button>
             </div>
           </form>
         </div>

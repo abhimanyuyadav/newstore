@@ -1,4 +1,5 @@
 "use client";
+import { uploadImage } from "@/lib/uploadImage";
 
 import { useState } from "react";
 import { getCategories, saveCategories, resetCategories } from "@/lib/data";
@@ -28,7 +29,7 @@ export default function AdminCategoriesPage() {
   };
 
   const handleSave = async () => {
-    saveCategories(categories);
+    try { await saveCategories(categories); } catch { setSaved(false); return; }
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
   };
@@ -130,49 +131,9 @@ export default function AdminCategoriesPage() {
                       return;
                     }
 
-                    const reader = new FileReader();
-                    reader.onload = async () => {
-                      const dataUrl = reader.result as string;
+                    try { updateCategory(index,"image",await uploadImage(file,"category")); }
+                    catch (error) { alert(error instanceof Error ? error.message : "Upload failed"); }
 
-                      // 1) Try server-side upload endpoint
-                      try {
-                        const res = await fetch('/api/uploads/category', {
-                          method: 'POST',
-                          headers: { 'Content-Type': 'application/json' },
-                          body: JSON.stringify({ fileName: file.name, fileData: dataUrl }),
-                        });
-                        const json = await res.json();
-                        if (res.ok && json.publicUrl) {
-                          updateCategory(index, 'image', json.publicUrl);
-                          return;
-                        }
-                      } catch (err) {
-                        // continue to next option
-                      }
-
-                      // 2) Try Supabase client upload (public bucket) as fallback
-                      try {
-                        const { createClient } = await import('@/utils/supabase/client');
-                        const supabase = createClient();
-                        const id = `${category.id}-${Date.now()}-${Math.floor(Math.random()*10000)}`;
-                        const ext = file.name.split('.').pop() || 'jpg';
-                        const path = `categories/${id}.${ext}`;
-                        const { error: uploadError } = await supabase.storage.from('category-images').upload(path, file, { upsert: true });
-                        if (!uploadError) {
-                          const { data } = supabase.storage.from('category-images').getPublicUrl(path);
-                          if (data && data.publicUrl) {
-                            updateCategory(index, 'image', data.publicUrl);
-                            return;
-                          }
-                        }
-                      } catch (err) {
-                        // continue to next option
-                      }
-
-                      // 3) Fallback to embedding data URL locally
-                      updateCategory(index, "image", dataUrl);
-                    };
-                    reader.readAsDataURL(file);
                   }}
                     className="mt-2 w-full rounded-2xl px-3 py-2 text-white bg-[#050505]" />
                 </label>
@@ -194,7 +155,7 @@ export default function AdminCategoriesPage() {
           ))}
         </div>
 
-        {saved && <p className="mt-4 rounded-3xl bg-green-500/10 border border-green-500/20 px-4 py-3 text-sm text-green-200">Categories saved locally.</p>}
+        {saved && <p className="mt-4 rounded-3xl bg-green-500/10 border border-green-500/20 px-4 py-3 text-sm text-green-200">Categories saved.</p>}
       </div>
     </div>
   );

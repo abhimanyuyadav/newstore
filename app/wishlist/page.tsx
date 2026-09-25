@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import ProductCard from "@/components/ProductCard";
-import { getWishlist, getProducts, toggleWishlist } from "@/lib/data";
+import { DATA_CHANGED_EVENT, getWishlist, getProducts, toggleWishlist } from "@/lib/data";
 import type { Product } from "@/lib/types";
 import { Heart, Trash2 } from "lucide-react";
 
@@ -20,7 +20,8 @@ export default function WishlistPage() {
     };
     load();
     window.addEventListener("storage", load);
-    return () => window.removeEventListener("storage", load);
+    window.addEventListener(DATA_CHANGED_EVENT, load);
+    return () => { window.removeEventListener("storage", load); window.removeEventListener(DATA_CHANGED_EVENT, load); };
   }, []);
 
   const wishlistProducts = products.filter(product => wishlistIds.includes(product.id));

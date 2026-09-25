@@ -22,7 +22,7 @@ export default function AdminCouponsPage() {
             <h1 className="text-3xl font-black mt-3">Coupon Manager</h1>
             <p className="text-sm text-white/70 mt-2">Create and edit discount coupons for your store.</p>
           </div>
-          <button onClick={async () => { saveCoupons(coupons); setSaved(true); setTimeout(() => setSaved(false), 2000); }}
+          <button onClick={async () => { try { await saveCoupons(coupons); } catch { setSaved(false); return; } setSaved(true); setTimeout(() => setSaved(false), 2000); }}
             className="inline-flex items-center gap-2 rounded-full bg-red-500 px-4 py-2 text-sm font-semibold text-white hover:bg-red-400 transition">
             <Save className="w-4 h-4" /> Save Coupons
           </button>
