@@ -1,0 +1,125 @@
+{
+  "products": [
+    {
+      "name": "[Draft] Sand Beige Overshirt",
+      "category": "cat_1790333367635_22",
+      "price": 0,
+      "originalPrice": 0,
+      "image": "/images/drafts/overshirt.png",
+      "description": "Reference-inspired sand beige button-front overshirt. DRAFT: AI-generated illustrative photo. NPR 0 is a placeholder, not an offer. Materials, pricing, sizes and stock require confirmation. Not available for purchase.",
+      "sizes": [
+        "To confirm"
+      ],
+      "featured": true,
+      "inStock": false,
+      "discountEnabled": false,
+      "newArrival": true,
+      "bestSeller": false,
+      "trending": false,
+      "variants": [],
+      "id": "p1790333462751262"
+    },
+    {
+      "name": "[Draft] Structured Tan Handbag",
+      "category": "cat_1790333343468_658",
+      "price": 0,
+      "originalPrice": 0,
+      "image": "/images/drafts/handbag.png",
+      "description": "Reference-inspired structured tan handbag with twin handles. DRAFT: AI-generated illustrative photo. NPR 0 is a placeholder, not an offer. Materials, pricing, sizes and stock require confirmation. Not available for purchase.",
+      "sizes": [
+        "To confirm"
+      ],
+      "featured": true,
+      "inStock": false,
+      "discountEnabled": false,
+      "newArrival": true,
+      "bestSeller": false,
+      "trending": false,
+      "variants": [],
+      "id": "p1790333461021630"
+    },
+    {
+      "name": "[Draft] Classic Leather-Strap Watch",
+      "category": "cat_1790333343468_658",
+      "price": 0,
+      "originalPrice": 0,
+      "image": "/images/drafts/watch.png",
+      "description": "Reference-inspired classic watch with a dark dial and brown strap. DRAFT: AI-generated illustrative photo. NPR 0 is a placeholder, not an offer. Materials, pricing, sizes and stock require confirmation. Not available for purchase.",
+      "sizes": [
+        "To confirm"
+      ],
+      "featured": true,
+      "inStock": false,
+      "discountEnabled": false,
+      "newArrival": true,
+      "bestSeller": false,
+      "trending": false,
+      "variants": [],
+      "id": "p1790333457420171"
+    },
+    {
+      "name": "[Draft] Minimal White Sneakers",
+      "category": "cat_1790333353792_92",
+      "price": 0,
+      "originalPrice": 0,
+      "image": "/images/drafts/sneakers.png",
+      "description": "Reference-inspired white low-top sneakers. DRAFT: AI-generated illustrative photo. NPR 0 is a placeholder, not an offer. Materials, pricing, sizes and stock require confirmation. Not available for purchase.",
+      "sizes": [
+        "To confirm"
+      ],
+      "featured": true,
+      "inStock": false,
+      "discountEnabled": false,
+      "newArrival": true,
+      "bestSeller": false,
+      "trending": false,
+      "variants": [],
+      "id": "p1790333428119927"
+    },
+    {
+      "name": "[Draft] Tortoiseshell Sunglasses",
+      "category": "cat_1790333343468_658",
+      "price": 0,
+      "originalPrice": 0,
+      "image": "/images/drafts/sunglasses.png",
+      "description": "Reference-inspired tortoiseshell sunglasses. DRAFT: AI-generated illustrative photo. NPR 0 is a placeholder, not an offer. Materials, pricing, sizes and stock require confirmation. Not available for purchase.",
+      "sizes": [
+        "To confirm"
+      ],
+      "featured": true,
+      "inStock": false,
+      "discountEnabled": false,
+      "newArrival": true,
+      "bestSeller": false,
+      "trending": false,
+      "variants": [],
+      "id": "p1790333411023185"
+    }
+  ],
+  "categories": [
+    {
+      "id": "cat_1790333343468_658",
+      "name": "Accessories",
+      "emoji": "🔖",
+      "enabled": false,
+      "subcategories": [],
+      "image": "/images/drafts/sunglasses.png"
+    },
+    {
+      "id": "cat_1790333353792_92",
+      "name": "Footwear",
+      "emoji": "🔖",
+      "enabled": false,
+      "subcategories": [],
+      "image": "/images/drafts/sneakers.png"
+    },
+    {
+      "id": "cat_1790333367635_22",
+      "name": "Men",
+      "emoji": "🔖",
+      "enabled": false,
+      "subcategories": [],
+      "image": "/images/drafts/overshirt.png"
+    }
+  ]
+}
