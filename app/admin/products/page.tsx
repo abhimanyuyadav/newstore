@@ -2,7 +2,7 @@
 import { uploadImage } from "@/lib/uploadImage";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { Product, Category } from "@/lib/types";
-import { getProducts, saveProducts, getCategories } from "@/lib/data";
+import { DATA_CHANGED_EVENT, getProducts, saveProducts, getCategories } from "@/lib/data";
 import { postProducts, postOrders, postUsers } from "@/utils/api/admin";
 import { Save, Tag, Trash2, PlusCircle, UploadCloud, MinusCircle } from "lucide-react";
 
@@ -72,8 +72,10 @@ export default function AdminProductsPage() {
       }
     };
 
+    const refresh = () => { setProducts(getProducts()); setCategories(getCategories()); };
+    window.addEventListener(DATA_CHANGED_EVENT, refresh);
     window.addEventListener("storage", handleStorage);
-    return () => window.removeEventListener("storage", handleStorage);
+    return () => { window.removeEventListener(DATA_CHANGED_EVENT, refresh); window.removeEventListener("storage", handleStorage); };
   }, []);
 
   const stats = useMemo(() => ({
@@ -212,6 +214,7 @@ export default function AdminProductsPage() {
           </div>
         </div>
 
+        <p className="mt-4 text-sm text-gray-600">Edits save automatically. Products in disabled categories remain unavailable to buy, even when marked in stock.</p>
         <div className="grid gap-4 mt-6 sm:grid-cols-2 xl:grid-cols-4">
           <div className="rounded-3xl border border-white/10 bg-white/5 p-5">
             <p className="text-xs uppercase tracking-[0.35em] text-white/50">Total Products</p>

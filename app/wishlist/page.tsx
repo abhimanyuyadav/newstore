@@ -57,7 +57,7 @@ export default function WishlistPage() {
                   <div className="flex items-start justify-between gap-3">
                     <div>
                       <h3 className="text-lg font-semibold">{product.name}</h3>
-                      <p className="text-sm text-gray-500 mt-1">{getCategories().find(c => c.id === product.category)?.enabled === false || (!product.inStock && product.price === 0) ? "Price coming soon" : `NPR ${product.price.toLocaleString()}`}</p>
+                      <p className="text-sm text-gray-500 mt-1">{product.price === 0 && (getCategories().find(c => c.id === product.category)?.enabled === false || !product.inStock) ? "Price coming soon" : `NPR ${product.price.toLocaleString()}`}</p>
                     </div>
                     <button aria-label={`Remove ${product.name} from wishlist`} onClick={() => removeItem(product.id)} className="rounded-full border border-gray-200 bg-white p-2 text-gray-500 hover:bg-gray-100">
                       <Trash2 className="w-4 h-4" />

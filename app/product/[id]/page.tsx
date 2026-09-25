@@ -131,7 +131,7 @@ export default function ProductPage() {
               <p className="text-xs font-bold uppercase tracking-widest text-black mb-2 capitalize">{category?.name || "Collection"}</p>
             <h1 className="text-2xl md:text-3xl font-bold leading-tight mb-3">{product.name}</h1>
             <div className="flex items-baseline gap-3 mb-4">
-              {categoryDisabled || (!product.inStock && product.price === 0) ? (
+              {product.price === 0 && (categoryDisabled || !product.inStock) ? (
                 <span className="text-2xl font-bold text-orange-700">Price coming soon</span>
               ) : (
                 <>

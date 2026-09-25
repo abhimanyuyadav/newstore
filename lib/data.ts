@@ -6,6 +6,17 @@ let admin = false;
 const pending = new Set<Promise<unknown>>();
 const queues = new Map<string, Promise<unknown>>();
 let saveFailure: Error | null = null;
+let catalogRevision = 0;
+export async function refreshSharedData() {
+  const revision = catalogRevision;
+  await Promise.allSettled([...pending]);
+  const store = await readAllSharedValues();
+  if (revision !== catalogRevision || pending.size) return;
+  for (const key of ["9teen_products", "9teen_categories", "9teen_site_settings", "9teen_coupons", "9teen_reviews"]) {
+    if (key in store) cache[key] = store[key];
+  }
+  notify();
+}
 const browser = () => typeof window !== "undefined";
 function notify() { if (browser()) window.dispatchEvent(new Event(DATA_CHANGED_EVENT)); }
 function cached<T>(key: string, fallback: T): T { return (cache[key] ?? fallback) as T; }
@@ -21,11 +32,13 @@ async function request(url: string, init?: RequestInit) {
 }
 function json(method: string, value: unknown): RequestInit { return { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(value) }; }
 function persist(key: string, value: unknown) {
+  catalogRevision++;
   cache[key] = value;
   notify();
   const work = (queues.get(key) || Promise.resolve()).catch(() => undefined).then(() => key === "9teen_orders" ? request("/api/orders", json("PATCH", value)) : writeSharedValue(key, value));
   queues.set(key, work);
   pending.add(work);
+  void work.then(() => { if (browser()) { try { window.localStorage.setItem("9teen-catalog-updated", `${Date.now()}-${Math.random()}`); } catch {} } }).catch(() => undefined);
   void work.catch(report).finally(() => { pending.delete(work); if (queues.get(key) === work) queues.delete(key); });
   return work;
 }

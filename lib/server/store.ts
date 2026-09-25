@@ -1,3 +1,5 @@
+import { ConvexHttpClient } from "convex/browser";
+import { makeFunctionReference } from "convex/server";
 import { createClient } from "@supabase/supabase-js";
 import { promises as fs } from "node:fs";
 import path from "node:path";
@@ -6,6 +8,13 @@ import { randomUUID } from "node:crypto";
 type Store = Record<string, unknown>;
 const file = path.resolve(process.env.STORE_FILE || ".data/admin-storage.json");
 let queue: Promise<unknown> = Promise.resolve();
+function convexStore() {
+  if (process.env.STORE_BACKEND !== "convex") return null;
+  const url = process.env.CONVEX_URL;
+  const secret = process.env.STORE_SERVER_SECRET;
+  if (!url || !secret || secret.length < 32) throw new Error("Configure CONVEX_URL and STORE_SERVER_SECRET");
+  return { client: new ConvexHttpClient(url, { logger: false }), secret };
+}
 function database() {
   if (process.env.STORE_BACKEND === "local") return null;
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -18,6 +27,8 @@ async function localStore(): Promise<Store> {
   catch (error) { if ((error as NodeJS.ErrnoException).code === "ENOENT") return {}; throw error; }
 }
 export async function readStore(): Promise<Store> {
+  const convex = convexStore();
+  if (convex) return convex.client.query(makeFunctionReference<"query">("serverStore:list"), { secret: convex.secret });
   const db = database();
   if (!db) return localStore();
   const { data, error } = await db.from("admin_storage").select("key,value");
@@ -25,6 +36,11 @@ export async function readStore(): Promise<Store> {
   return Object.fromEntries(data.map(row => [row.key, row.value]));
 }
 export async function readValue<T>(key: string, fallback: T): Promise<T> {
+  const convex = convexStore();
+  if (convex) {
+    const row = await convex.client.query(makeFunctionReference<"query">("serverStore:get"), { secret: convex.secret, key });
+    return row?.value ?? fallback;
+  }
   const db = database();
   if (!db) return (await localStore())[key] as T ?? fallback;
   const { data, error } = await db.from("admin_storage").select("value").eq("key", key).maybeSingle();
@@ -33,6 +49,16 @@ export async function readValue<T>(key: string, fallback: T): Promise<T> {
 }
 // Compare-and-swap prevents two server instances from dropping each other's orders/accounts.
 export async function updateValue<T>(key: string, fallback: T, update: (value: T) => T): Promise<T> {
+  const convex = convexStore();
+  if (convex) {
+    for (let attempt = 0; attempt < 8; attempt++) {
+      const row = await convex.client.query(makeFunctionReference<"query">("serverStore:get"), { secret: convex.secret, key });
+      const next = update(row?.value ?? fallback);
+      const saved = await convex.client.mutation(makeFunctionReference<"mutation">("serverStore:compareAndSwap"), { secret: convex.secret, key, revision: row?.revision ?? null, value: JSON.parse(JSON.stringify(next)) });
+      if (saved) return next;
+    }
+    throw new Error("Concurrent update; please retry");
+  }
   const db = database();
   if (db) {
     for (let attempt = 0; attempt < 8; attempt++) {

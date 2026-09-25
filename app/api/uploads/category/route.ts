@@ -1,3 +1,5 @@
+import { ConvexHttpClient } from "convex/browser";
+import { makeFunctionReference } from "convex/server";
 import { requireAdmin, sameOrigin, jsonBody, failure } from "@/lib/server/http";
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
@@ -28,7 +30,7 @@ export async function POST(req: NextRequest) {
     await requireAdmin();
     sameOrigin(req);
     const ip = req.headers.get('x-forwarded-for') || 'unknown';
-    
+
     if (!checkUploadLimit(ip, 10, 3600000)) {
       return NextResponse.json(
         { error: 'Upload limit exceeded' },
@@ -38,7 +40,7 @@ export async function POST(req: NextRequest) {
 
     const body = await jsonBody(req, 3 * 1024 * 1024);
     const { fileName, fileData } = body || {};
-    
+
     if (!fileName || typeof fileData !== 'string') {
       return NextResponse.json(
         { error: 'Missing file data' },
@@ -64,15 +66,15 @@ export async function POST(req: NextRequest) {
 
     const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const SUPABASE_SERVICE_ROLE = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_SUPABASE_SERVICE_ROLE_KEY;
-    
-    if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE) {
+
+    if (process.env.STORE_BACKEND !== "convex" && (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE)) {
       return NextResponse.json(
         { error: 'Service unavailable' },
         { status: 503 }
       );
     }
 
-    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE);
+
 
     const match = /^data:(.+);base64,(.+)$/.exec(fileData);
     if (!match) {
@@ -105,6 +107,13 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    if (process.env.STORE_BACKEND === "convex") {
+      if (!process.env.CONVEX_URL || !process.env.STORE_SERVER_SECRET) throw new Error("Configure Convex storage");
+      const client = new ConvexHttpClient(process.env.CONVEX_URL, { logger: false });
+      const publicUrl = await client.action(makeFunctionReference<"action">("serverStore:uploadImage"), { secret: process.env.STORE_SERVER_SECRET, data: Uint8Array.from(buffer).buffer, contentType });
+      return NextResponse.json({ publicUrl });
+    }
+    const supabase = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE!);
     // Generate secure random filename
     const randomId = crypto.randomBytes(16).toString('hex');
     const ext = contentType.split('/')[1];
