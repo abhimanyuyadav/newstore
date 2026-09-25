@@ -49,12 +49,12 @@ export default function ProductPage() {
 
 
   if (!hydrated) {
-    return <div className="min-h-screen bg-white flex items-center justify-center"><div className="text-sm text-gray-500">Loading product…</div></div>;
+    return <div className="min-h-screen bg-white product-detail-page flex items-center justify-center"><div className="text-sm text-gray-500">Loading product…</div></div>;
   }
 
   if (!product) {
     return (
-      <div className="min-h-screen bg-white">
+      <div className="min-h-screen bg-white product-detail-page">
         <Navbar />
         <div className="max-w-3xl mx-auto px-4 py-20 text-center">
           <h1 className="text-2xl font-bold mb-2">Product not found</h1>
@@ -118,12 +118,12 @@ export default function ProductPage() {
   }
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-white product-detail-page">
       <Navbar />
-      <div className="max-w-7xl mx-auto px-4 py-6">
+      <div className="store-shell shopping-content">
         <Link href="/products" className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-black mb-6 transition-colors"><ArrowLeft className="w-4 h-4" />Back</Link>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12">
-          <div className="relative h-80 md:h-[500px] rounded-sm overflow-hidden bg-gray-100">
+          <div className="relative h-[420px] md:h-[580px] rounded-sm overflow-hidden bg-gray-100">
             <Image src={product.image} alt={product.name} fill className="object-cover" sizes="(max-width:768px) 100vw,50vw" />
               {product.badge && <span className="absolute top-3 left-3 bg-black text-white text-xs font-bold px-2.5 py-1 rounded-full">{product.badge}</span>}
           </div>
@@ -145,7 +145,7 @@ export default function ProductPage() {
               <p className="text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">Select Size</p>
               <div className="flex flex-wrap gap-2">
                 {product.sizes.map(s => (
-                  <button key={s} onClick={() => setSize(s)} className={`min-w-[42px] h-10 px-3 border rounded-lg text-sm font-semibold transition-all ${size === s ? "bg-black text-white border-black" : "border-gray-200 text-gray-700 hover:border-black"}`}>{s}</button>
+                  <button key={s} aria-pressed={size === s} onClick={() => setSize(s)} className={`min-w-[42px] h-10 px-3 border rounded-lg text-sm font-semibold transition-all ${size === s ? "bg-black text-white border-black" : "border-gray-200 text-gray-700 hover:border-black"}`}>{s}</button>
                 ))}
               </div>
             </div>
@@ -154,7 +154,7 @@ export default function ProductPage() {
                 <p className="text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">{variant.name}</p>
                 <div className="flex flex-wrap gap-2">
                   {variant.values.map(value => (
-                    <button key={value} onClick={() => setVariantSelections(prev => ({ ...prev, [variant.name]: value }))}
+                    <button key={value} aria-pressed={variantSelections[variant.name] === value} onClick={() => setVariantSelections(prev => ({ ...prev, [variant.name]: value }))}
                       className={`min-w-[42px] h-10 px-3 border rounded-lg text-sm font-semibold transition-all ${variantSelections[variant.name] === value ? "bg-black text-white border-black" : "border-gray-200 text-gray-700 hover:border-black"}`}>
                       {value}
                     </button>
@@ -169,7 +169,7 @@ export default function ProductPage() {
               </div>
             )}
             <div className="flex flex-col gap-3 mt-auto">
-                <button onClick={addToCart} disabled={!product.inStock || categoryDisabled} className={`w-full py-3.5 rounded-sm font-bold text-sm flex items-center justify-center gap-2 transition-all ${added ? "bg-green-500 text-white" : "bg-black hover:bg-black text-white"} disabled:opacity-50`}>
+                <button onClick={addToCart} disabled={!product.inStock || categoryDisabled} className={`product-add-button w-full py-3.5 rounded-sm font-bold text-sm flex items-center justify-center gap-2 transition-all ${added ? "bg-green-500 text-white" : "bg-black hover:bg-black text-white"} disabled:opacity-50`}>
                   {added ? <><Check className="w-4 h-4" />Added!</> : <><ShoppingCart className="w-4 h-4" />Add to Cart</>}
                 </button>
               <button onClick={() => {
@@ -179,7 +179,7 @@ export default function ProductPage() {
               }} disabled={!product.inStock || categoryDisabled} className="w-full py-3.5 rounded-sm font-bold text-sm border border-gray-300 text-gray-700 bg-white hover:bg-gray-50 transition-colors disabled:opacity-50">
                 Message on WhatsApp
               </button>
-              <button onClick={buyNow} disabled={!product.inStock || categoryDisabled} className="w-full py-3.5 rounded-sm font-bold text-sm bg-white hover:bg-gray-100 text-black border border-gray-300 text-center transition-colors disabled:opacity-50">
+              <button onClick={buyNow} disabled={!product.inStock || categoryDisabled} className="w-full py-3.5 rounded-sm font-bold text-sm bg-[#17212b] hover:bg-gray-800 text-white border border-gray-300 text-center transition-colors disabled:opacity-50">
                 {settings.esewaEnabled ? "Buy Now with eSewa" : "Checkout"}
               </button>
             </div>

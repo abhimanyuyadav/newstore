@@ -1,4 +1,4 @@
-import { Playfair_Display, DM_Sans } from "next/font/google";
+import { DM_Sans } from "next/font/google";
 import "./globals.css";
 import DataProvider from "@/components/DataProvider";
 import { CartProvider } from "@/components/CartContext";
@@ -8,8 +8,7 @@ export const metadata = {
   description: "Browse the latest curated streetwear, beauty, and accessories from 9TEEN. Shop products, categories, and exclusive offers on the homepage.",
 };
 
-const playfair = Playfair_Display({ subsets:["latin"], weight:["400","500","700","900"], style:["normal","italic"], variable:"--font-playfair", display:"swap" });
-const dmSans = DM_Sans({ subsets:["latin"], weight:["300","400","500","600"], variable:"--font-dm-sans", display:"swap" });
+const dmSans = DM_Sans({ subsets:["latin"], weight:["300","400","500","600","700","800"], variable:"--font-dm-sans", display:"swap" });
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -19,7 +18,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link rel="apple-touch-icon" href="/favicon.svg" />
         <link rel="manifest" href="/site.webmanifest" />
       </head>
-      <body className={`${playfair.variable} ${dmSans.variable}`}>
+      <body className={dmSans.variable}>
         <DataProvider><CartProvider>{children}</CartProvider></DataProvider>
       </body>
     </html>

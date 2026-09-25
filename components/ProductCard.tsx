@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Heart, ArrowUpRight } from "lucide-react";
 import { DATA_CHANGED_EVENT, getCategories, getWishlist, toggleWishlist } from "@/lib/data";
+import { swatchColor } from "@/lib/design";
 import { Product } from "@/lib/types";
 export default function ProductCard({ product, disabled }: { product: Product; disabled?: boolean }) {
   const [wishlist, setWishlist] = useState<string[]>(getWishlist());
@@ -12,6 +13,7 @@ export default function ProductCard({ product, disabled }: { product: Product; d
   useEffect(() => setFailed(false), [product.image]);
   const category = getCategories().find(c => c.id === product.category);
   const unavailable = disabled || category?.enabled === false;
+  const colors = product.variants?.find(v => /^(color|colour|shade)$/i.test(v.name))?.values || [];
   const saved = wishlist.includes(product.id);
   return <article className="editorial-product">
     <div className="product-photo">
@@ -22,6 +24,6 @@ export default function ProductCard({ product, disabled }: { product: Product; d
       <button type="button" className={`product-heart ${saved ? "is-saved" : ""}`} aria-label={`${saved ? "Remove" : "Save"} ${product.name} ${saved ? "from" : "to"} wishlist`} aria-pressed={saved} onClick={() => setWishlist(toggleWishlist(product.id))}><Heart width={18} height={18} fill={saved ? "currentColor" : "none"} /></button>
       <Link href={`/product/${product.id}`} className="product-shop-link">{unavailable || !product.inStock ? "View details" : "Choose options"}<ArrowUpRight width={16} height={16} /></Link>
     </div>
-    <div className="product-caption"><p className="product-category">{category?.name || product.category}</p><div className="product-name-price"><Link href={`/product/${product.id}`}>{product.name}</Link><span>NPR {product.price.toLocaleString()}</span></div>{product.discountEnabled && product.originalPrice && product.originalPrice > product.price && <s className="product-original">NPR {product.originalPrice.toLocaleString()}</s>}<p className="product-sizes">{product.sizes?.join(" / ") || "One size"}</p></div>
+    <div className="product-caption"><p className="product-category">{category?.name || product.category}</p><div className="product-name-price"><Link href={`/product/${product.id}`}>{product.name}</Link><span>NPR {product.price.toLocaleString()}</span></div>{product.discountEnabled && product.originalPrice && product.originalPrice > product.price && <s className="product-original">NPR {product.originalPrice.toLocaleString()}</s>}<p className="product-sizes">{product.sizes?.join(" / ") || "One size"}</p><div className="product-swatches">{colors.slice(0,6).map(color => <span key={color} className="color-dot" style={{background:swatchColor(color)}} title={color} aria-label={color}/>)}<Link href={`/product/${product.id}`} className="product-card-more" aria-label={`Choose options for ${product.name}`}>+</Link></div></div>
   </article>;
 }

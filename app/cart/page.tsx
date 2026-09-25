@@ -9,7 +9,7 @@ import { Trash2, Plus, Minus, ShoppingBag, ArrowRight } from "lucide-react";
 export default function CartPage() {
   const { items, dispatch, total, count } = useCart();
   if (items.length === 0) return (
-    <div className="min-h-screen bg-white"><Navbar />
+    <div className="min-h-screen bg-white shopping-page"><Navbar />
       <div className="max-w-2xl mx-auto px-4 py-20 text-center">
         <ShoppingBag className="w-16 h-16 text-gray-200 mx-auto mb-4" />
         <h2 className="text-xl font-bold text-gray-700 mb-2">Your cart is empty</h2>
@@ -20,10 +20,10 @@ export default function CartPage() {
   );
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-white shopping-page">
       <Navbar />
-      <div className="max-w-7xl mx-auto px-4 py-6">
-        <h1 className="text-2xl font-bold mb-6">Your Cart ({count} items)</h1>
+      <div className="store-shell shopping-content">
+        <h1 className="text-2xl font-bold mb-6">Your Cart <span className="cart-item-count">{count} item{count === 1 ? "" : "s"}</span></h1>
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 space-y-3">
             {items.map(item => {
@@ -39,7 +39,7 @@ export default function CartPage() {
               const increase = () => dispatch({ type: "UPDATE_QTY", id: item.id, size: item.size, qty: item.quantity + 1, variantSelections: item.variantSelections });
               const remove = () => dispatch({ type: "REMOVE", id: item.id, size: item.size, variantSelections: item.variantSelections });
               return (
-                <div key={itemKey} className="bg-white rounded-sm p-3 flex gap-3 items-start border border-gray-100">
+                <div key={itemKey} className="cart-row bg-white rounded-sm p-3 flex gap-3 items-start border border-gray-100">
                   <div className="relative w-20 h-20 rounded-lg overflow-hidden shrink-0 bg-gray-50">
                     <Image src={item.image} alt={item.name} fill className="object-cover" sizes="80px" />
                   </div>
@@ -51,19 +51,19 @@ export default function CartPage() {
                     )}
                     <div className="flex items-center justify-between mt-2">
                       <div className="flex items-center gap-2 border border-gray-200 rounded-lg px-2 py-1">
-                        <button onClick={decrease} className="cursor-pointer"><Minus className="w-3 h-3 text-gray-500" /></button>
+                        <button aria-label={`Decrease quantity of ${item.name}`} onClick={decrease} className="cursor-pointer"><Minus className="w-3 h-3 text-gray-500" /></button>
                         <span className="text-sm font-semibold w-5 text-center">{item.quantity}</span>
-                        <button onClick={increase} className="cursor-pointer"><Plus className="w-3 h-3 text-gray-500" /></button>
+                        <button aria-label={`Increase quantity of ${item.name}`} onClick={increase} className="cursor-pointer"><Plus className="w-3 h-3 text-gray-500" /></button>
                       </div>
                       <p className="font-bold text-sm">Rs {(item.price * item.quantity).toLocaleString()}</p>
                     </div>
                   </div>
-                  <button onClick={remove} className="p-1.5 hover:bg-red-50 rounded-lg transition-colors shrink-0"><Trash2 className="w-4 h-4 text-red-400" /></button>
+                  <button aria-label={`Remove ${item.name}`} onClick={remove} className="p-1.5 hover:bg-red-50 rounded-lg transition-colors shrink-0"><Trash2 className="w-4 h-4 text-red-400" /></button>
                 </div>
               );
             })}
           </div>
-          <div className="bg-white rounded-sm border border-gray-100 p-5 h-fit sticky top-16">
+          <div className="order-summary bg-white rounded-sm border border-gray-100 p-5 h-fit sticky top-16">
             <h2 className="font-bold text-lg mb-4">Order Summary</h2>
             <div className="space-y-2 text-sm">
               <div className="flex justify-between"><span className="text-gray-500">Subtotal</span><span>Rs {total.toLocaleString()}</span></div>
