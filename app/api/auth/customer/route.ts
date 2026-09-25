@@ -5,8 +5,11 @@ import { cookieOptions, customerSession, failure, HttpError, jsonBody, rateLimit
 import { publicUser, hashPassword, verifyPassword } from "@/lib/server/auth";
 import { readValue, updateValue } from "@/lib/server/store";
 import type { UserAccount, Order } from "@/lib/types";
+import { clerkEnabled } from "@/lib/clerk-policy";
+import { clerkCustomer, revokeClerkSession } from "@/lib/server/clerk-auth";
 export async function GET() {
   try {
+    if (clerkEnabled()) { const user = await clerkCustomer(); return NextResponse.json(user ? publicUser(user) : null); }
     const session = await customerSession();
     if (!session) return NextResponse.json(null);
     const users = await readValue<UserAccount[]>("9teen_user_accounts", []);
@@ -16,6 +19,7 @@ export async function GET() {
 }
 export async function POST(req: Request) {
   try {
+    if (clerkEnabled()) throw new HttpError(410, "Continue through Clerk to sign in or create an account");
     rateLimit(`customer:${req.headers.get("x-forwarded-for") || "local"}`, 10, 900000);
     const body = await jsonBody(req, 8192);
     if (!process.env.SESSION_SECRET || process.env.SESSION_SECRET.length < 32) throw new HttpError(503, "Account service is not configured");
@@ -51,6 +55,7 @@ export async function POST(req: Request) {
 export async function DELETE(req: Request) {
   try {
     sameOrigin(req);
+    if (clerkEnabled()) await revokeClerkSession();
     const result = NextResponse.json({ ok: true });
     result.cookies.set(CUSTOMER_COOKIE, "", { ...cookieOptions, maxAge: 0 });
     return result;

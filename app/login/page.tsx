@@ -1,4 +1,6 @@
 "use client";
+import { clerkEnabled } from "@/lib/clerk-policy";
+import { ClerkLogin } from "@/components/ClerkAuthentication";
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -6,6 +8,9 @@ import { useState, useEffect } from "react";
 import { loginUser, registerUser, getCurrentUser } from "@/lib/data";
 
 export default function LoginPage() {
+  return clerkEnabled() ? <ClerkLogin /> : <LegacyLoginPage />;
+}
+function LegacyLoginPage() {
   const router = useRouter();
   const [mode, setMode] = useState<"login" | "register">("login");
   const [loginEmail, setLoginEmail] = useState("");

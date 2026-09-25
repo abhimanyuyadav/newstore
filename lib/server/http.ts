@@ -1,18 +1,27 @@
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { ADMIN_COOKIE, CUSTOMER_COOKIE, verifySession } from "../session";
+import { clerkEnabled } from "../clerk-policy";
+import { clerkCustomer, isClerkAdmin } from "./clerk-auth";
 
 export class HttpError extends Error {
   constructor(public status: number, message: string) { super(message); }
 }
 export async function isAdmin() {
   if (process.env.APP_SURFACE === "storefront") return false;
+  if (clerkEnabled()) return isClerkAdmin();
   return (await verifySession((await cookies()).get(ADMIN_COOKIE)?.value))?.role === "admin";
 }
 export async function requireAdmin() {
   if (!await isAdmin()) throw new HttpError(401, "Administrator sign-in required");
 }
 export async function customerSession() {
+  if (clerkEnabled()) {
+    const user = await clerkCustomer();
+    if (user) return { role: "customer" as const, sub: user.id, exp: Infinity };
+    const guest = await verifySession((await cookies()).get(CUSTOMER_COOKIE)?.value);
+    return guest?.role === "customer" && guest.sub.startsWith("guest:") ? guest : null;
+  }
   const session = await verifySession((await cookies()).get(CUSTOMER_COOKIE)?.value);
   return session?.role === "customer" ? session : null;
 }

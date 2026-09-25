@@ -1,10 +1,13 @@
 import { timingSafeEqual } from "node:crypto";
+import { clerkEnabled } from "@/lib/clerk-policy";
+import { revokeClerkSession } from "@/lib/server/clerk-auth";
 import { NextResponse } from "next/server";
 import { ADMIN_COOKIE, createSession } from "@/lib/session";
 import { cookieOptions, failure, HttpError, isAdmin, jsonBody, rateLimit, sameOrigin } from "@/lib/server/http";
 export async function GET() { return NextResponse.json({ authenticated: await isAdmin() }); }
 export async function POST(req: Request) {
   try {
+    if (clerkEnabled()) throw new HttpError(410, "Continue through Clerk to sign in");
     if (process.env.APP_SURFACE === "storefront") throw new HttpError(404, "Use the separate admin site to sign in");
     rateLimit(`admin:${req.headers.get("x-forwarded-for") || "local"}`, 5, 900000);
     const body = await jsonBody(req, 8192);
@@ -22,6 +25,7 @@ export async function POST(req: Request) {
 export async function DELETE(req: Request) {
   try {
     sameOrigin(req);
+    if (clerkEnabled()) await revokeClerkSession();
     const result = NextResponse.json({ ok: true });
     result.cookies.set(ADMIN_COOKIE, "", { ...cookieOptions, maxAge: 0 });
     return result;

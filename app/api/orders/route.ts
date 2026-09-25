@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import { clerkEnabled } from "@/lib/clerk-policy";
 import { NextResponse } from "next/server";
 import { defaultProducts, categories as defaultCategories, defaultSiteSettings } from "@/lib/data";
 import type { Order, Product, Category, SiteSettings } from "@/lib/types";
@@ -49,12 +50,12 @@ export async function POST(req: Request) {
     });
     const session = await customerSession();
     const ownerId = session?.sub || "guest:" + randomUUID();
-    const token = await createSession("customer", ownerId);
+    const token = !clerkEnabled() || ownerId.startsWith("guest:") ? await createSession("customer", ownerId) : null;
     const order: Order = { id: "19T-" + randomUUID(), ownerId, requestId: body.requestId, items, customer: { name:customer.name.trim(),phone:customer.phone.trim(),email:customer.email.trim().toLowerCase(),address:customer.address.trim(),city:customer.city.trim() }, total: Math.round(items.reduce((n: number,i: any) => n + i.price * i.quantity,0)*100)/100, paymentMethod: body.paymentMethod, paymentStatus:"pending",status:"pending",createdAt:new Date().toISOString(),whatsappMessage:typeof body.whatsappMessage === "string" ? body.whatsappMessage.slice(0,2000) : undefined };
     const orders = await updateValue<Order[]>("9teen_orders", [], rows => rows.some(o => o.ownerId === ownerId && o.requestId === body.requestId) ? rows : [order,...rows]);
     const saved = orders.find(o => o.ownerId === ownerId && o.requestId === body.requestId)!;
     const response = NextResponse.json(saved, { status: 201 });
-    response.cookies.set(CUSTOMER_COOKIE, token, cookieOptions);
+    if (token) response.cookies.set(CUSTOMER_COOKIE, token, cookieOptions);
     return response;
   } catch (error) { return failure(error); }
 }

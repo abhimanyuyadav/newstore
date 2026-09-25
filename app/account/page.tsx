@@ -1,4 +1,6 @@
 "use client";
+import { clerkEnabled } from "@/lib/clerk-policy";
+import { ClerkLogout } from "@/components/ClerkAuthentication";
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -23,7 +25,7 @@ export default function AccountPage() {
     return <div className="min-h-screen bg-white text-black flex items-center justify-center">Loading account…</div>;
   }
 
-  const orders = getOrders().filter(order => order.customer.email.toLowerCase() === user.email.toLowerCase());
+  const orders = getOrders().filter(order => order.ownerId === user.id);
 
   return (
     <div className="min-h-screen bg-white text-black">
@@ -36,7 +38,7 @@ export default function AccountPage() {
           </div>
           <div className="flex gap-3">
             <Link href="/" className="rounded-full border border-gray-200 px-4 py-2 text-sm font-semibold text-gray-700">Back to home</Link>
-            <button onClick={async () => { try { await logoutUser(); router.push("/"); } catch { alert("Unable to sign out. Please retry."); } }} className="rounded-full bg-black px-4 py-2 text-sm font-semibold text-white">Logout</button>
+            {clerkEnabled() ? <ClerkLogout redirectUrl="/" className="rounded-full bg-black px-4 py-2 text-sm font-semibold text-white">Logout</ClerkLogout> : <button onClick={async () => { try { await logoutUser(); router.push("/"); } catch { alert("Unable to sign out. Please retry."); } }} className="rounded-full bg-black px-4 py-2 text-sm font-semibold text-white">Logout</button>}
           </div>
         </div>
 

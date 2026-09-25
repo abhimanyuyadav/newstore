@@ -1,4 +1,6 @@
 "use client";
+import { clerkEnabled } from "@/lib/clerk-policy";
+import { ClerkLogout } from "@/components/ClerkAuthentication";
 import "./admin.css";
 import { useEffect, useState } from "react";
 import Link from "next/link";
@@ -60,9 +62,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           ))}
         </nav>
         <div className="px-4 pb-6">
-          <button onClick={async () => { try { await adminLogout(); router.push("/admin"); } catch { alert("Unable to sign out. Please retry."); } }} className="flex w-full items-center justify-center gap-2 rounded-3xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm font-semibold text-red-300 hover:bg-red-500/15 transition">
+          {clerkEnabled() ? <ClerkLogout redirectUrl="/admin" className="flex w-full items-center justify-center gap-2 rounded-3xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm font-semibold text-red-300 hover:bg-red-500/15 transition">Logout</ClerkLogout> : <button onClick={async () => { try { await adminLogout(); router.push("/admin"); } catch { alert("Unable to sign out. Please retry."); } }} className="flex w-full items-center justify-center gap-2 rounded-3xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm font-semibold text-red-300 hover:bg-red-500/15 transition">
             <LogOut className="w-4 h-4" /> Logout
-          </button>
+          </button>}
         </div>
       </aside>
       {open && <div className="fixed inset-0 bg-black/50 z-30 md:hidden" onClick={() => setOpen(false)} />}

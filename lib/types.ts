@@ -19,6 +19,7 @@ export interface Order {
   createdAt: string;
 }
 export interface UserAccount {
+  clerkUserId?: string;
   id: string;
   name: string;
   email: string;

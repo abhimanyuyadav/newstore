@@ -2,6 +2,7 @@ import { DM_Sans } from "next/font/google";
 import "./globals.css";
 import DataProvider from "@/components/DataProvider";
 import { CartProvider } from "@/components/CartContext";
+import { AuthenticationProvider } from "@/components/ClerkAuthentication";
 
 export const metadata = {
   title: process.env.APP_SURFACE === "admin" ? "9TEEN | Store Administration" : "9TEEN Shop | Style for Every Season",
@@ -20,7 +21,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link rel="manifest" href="/site.webmanifest" />
       </head>
       <body className={dmSans.variable}>
-        <DataProvider><CartProvider>{children}</CartProvider></DataProvider>
+        <AuthenticationProvider><DataProvider><CartProvider>{children}</CartProvider></DataProvider></AuthenticationProvider>
       </body>
     </html>
   );

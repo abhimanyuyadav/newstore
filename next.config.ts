@@ -1,4 +1,7 @@
 import type { NextConfig } from "next";
+const clerkHost = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY ? Buffer.from(process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY.split("_").slice(2).join("_"), "base64").toString().replace(/\$/, "") : "";
+const clerkOrigin = /^[a-z0-9.-]+$/i.test(clerkHost) ? "https://" + clerkHost : "";
+const clerkSources = process.env.NEXT_PUBLIC_AUTH_PROVIDER === "clerk" ? " " + clerkOrigin + " https://challenges.cloudflare.com" : "";
 const nextConfig: NextConfig = {
   images: {
     remotePatterns: [
@@ -38,7 +41,7 @@ const nextConfig: NextConfig = {
           },
           {
             key: "Content-Security-Policy",
-            value: "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https:; frame-ancestors 'self';",
+            value: `default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'${clerkSources}; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https:; frame-ancestors 'self'; frame-src 'self'${clerkSources}; worker-src 'self' blob:;`,
           },
         ],
       },

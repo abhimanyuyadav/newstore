@@ -1,10 +1,15 @@
 "use client";
+import { clerkEnabled } from "@/lib/clerk-policy";
+import { ClerkLogin } from "@/components/ClerkAuthentication";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { adminLogin, isAdminLoggedIn } from "@/lib/data";
 import { Lock, Eye, EyeOff } from "lucide-react";
 
 export default function AdminLogin() {
+  return clerkEnabled() ? <ClerkLogin admin /> : <LegacyAdminLogin />;
+}
+function LegacyAdminLogin() {
   const router = useRouter();
   const [username, setUsername] = useState("");
   const [pw, setPw] = useState("");
