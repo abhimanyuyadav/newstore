@@ -57,7 +57,8 @@ export default function AdminProductsPage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [newProduct, setNewProduct] = useState(defaultNewProduct());
   const [saved, setSaved] = useState(false);
-  const [published, setPublished] = useState(false);
+  const [query, setQuery] = useState("");
+  const [stockFilter, setStockFilter] = useState("all");
   const [isReady, setIsReady] = useState(false);
   const [draggingProductId, setDraggingProductId] = useState<string | null>(null);
   const [newImageError, setNewImageError] = useState("");
@@ -179,12 +180,12 @@ export default function AdminProductsPage() {
     setProducts(nextProducts);
     setNewProduct(defaultNewProduct());
     setSaved(true);
-    setPublished(false);
+
     setNewImageError("");
     return true;
   };
 
-  const publishProduct = async () => { setPublished(await addProduct()); };
+
 
   const handleProductImageDrop = async (id: string, files: FileList | null) => {
     if (!files?.[0]) return;
@@ -202,7 +203,7 @@ export default function AdminProductsPage() {
           <div>
             <p className="text-xs uppercase tracking-[0.35em] text-red-400">Products</p>
             <h1 className="text-3xl font-black mt-3">Product Manager</h1>
-            <p className="text-sm text-white/70 mt-2">Add, edit, delete products and manage discount visibility with drag-and-drop image uploads.</p>
+            <p className="text-sm text-white/70 mt-2">Manage your catalog below. Existing product edits save automatically.</p>
           </div>
           <div className="inline-flex flex-wrap items-center gap-3">
             <button type="button" disabled={!isReady} onClick={() => {
@@ -248,19 +249,17 @@ export default function AdminProductsPage() {
           <div className="flex items-center justify-between gap-4 mb-5">
             <div>
               <h2 className="text-2xl font-bold">Add New Product</h2>
-              <p className="text-sm text-white/60 mt-2">Use drag-and-drop to upload a product image and create a new listing.</p>
+              <p className="text-sm text-white/60 mt-2">Fill in the details, then choose Add Product. Turn off In Stock for products that are not ready to sell.</p>
             </div>
             <div className="flex flex-wrap gap-3">
               <button onClick={addProduct} className="inline-flex items-center gap-2 rounded-full bg-red-500 px-4 py-2 text-sm font-semibold text-white hover:bg-red-400 transition">
                 <PlusCircle className="w-4 h-4" /> Add Product
               </button>
-              <button type="button" disabled={!isReady} onClick={publishProduct} className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/10 px-4 py-2 text-sm font-semibold text-white hover:bg-white/15 transition disabled:opacity-50 disabled:cursor-not-allowed">
-                <PlusCircle className="w-4 h-4" /> Publish to Frontend
-              </button>
+
             </div>
           </div>
 
-          {published && <p className="mt-3 text-sm text-green-400">Product published to the frontend and visible to customers.</p>}
+
 
           <div id="add-product" className="grid gap-4 lg:grid-cols-2">
             <div className="rounded-3xl border border-white/10 bg-black/20 p-4">
@@ -391,8 +390,14 @@ export default function AdminProductsPage() {
           </div>
         </div>
 
+        <section className="admin-catalog-tools" aria-label="Find products">
+          <div><h2 className="text-xl font-bold">Your products</h2><p>Search by name or filter availability.</p></div>
+          <label>Search products<input type="search" value={query} onChange={e => setQuery(e.target.value)} placeholder="Search product name" /></label>
+          <label>Availability<select value={stockFilter} onChange={e => setStockFilter(e.target.value)}><option value="all">All products</option><option value="in">In stock</option><option value="out">Out of stock</option></select></label>
+        </section>
+        {products.filter(p => p.name.toLowerCase().includes(query.toLowerCase()) && (stockFilter === "all" || p.inStock === (stockFilter === "in"))).length === 0 && <p role="status" className="p-6">No matching products. Try another search or availability filter.</p>}
         <div className="grid gap-5 mt-6">
-          {products.map(product => (
+          {products.filter(p => p.name.toLowerCase().includes(query.toLowerCase()) && (stockFilter === "all" || p.inStock === (stockFilter === "in"))).map(product => (
             <div key={product.id} className="rounded-3xl border border-white/10 bg-white/5 p-5">
               <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                 <div className="flex items-center gap-4">
@@ -509,7 +514,7 @@ export default function AdminProductsPage() {
           ))}
         </div>
 
-        {saved && <p className="mt-4 text-sm text-green-400">Changes saved locally in admin storage.</p>}
+        {saved && <p className="mt-4 text-sm text-green-400">Catalog saved.</p>}
       </div>
     </div>
   );

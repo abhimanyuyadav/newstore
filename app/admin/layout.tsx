@@ -1,4 +1,5 @@
 "use client";
+import "./admin.css";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
@@ -39,11 +40,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     }
   }, [router, pathname]);
 
-  if (pathname === "/admin") return <>{children}</>;
+  if (pathname === "/admin") return <div className="admin-theme">{children}</div>;
   if (!ready) return <div className="min-h-screen bg-[#050505] flex items-center justify-center"><div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin" /></div>;
 
   return (
-    <div className="min-h-screen bg-[#070707] text-white flex">
+    <div className="admin-theme min-h-screen bg-[#070707] text-white flex">
       <aside className={`fixed inset-y-0 left-0 z-40 w-64 bg-[#070707] border-r border-white/10 flex flex-col transition-transform duration-300 ${open ? "translate-x-0" : "-translate-x-full md:translate-x-0"}`}>
         <div className="px-6 py-7 border-b border-white/10">
           <p className="font-black text-white text-2xl" style={{ fontFamily: "var(--font-playfair)" }}>{siteSettings.siteName.slice(0, 1)}<span className="text-red-500">{siteSettings.siteName.slice(1)}</span></p>
@@ -51,7 +52,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </div>
         <nav className="flex-1 px-4 py-5 space-y-2">
           {nav.map(({ href, label, Icon }) => (
-            <Link key={href} href={href} onClick={() => setOpen(false)}
+            <Link key={href} href={href} aria-current={pathname === href ? "page" : undefined} onClick={() => setOpen(false)}
               className={`flex items-center gap-3 rounded-3xl px-4 py-3 text-sm font-medium transition ${pathname === href ? "bg-red-500/10 text-red-400" : "text-white/70 hover:bg-white/5 hover:text-white"}`}>
               <Icon className="w-5 h-5" />{label}
             </Link>
@@ -65,8 +66,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       </aside>
       {open && <div className="fixed inset-0 bg-black/50 z-30 md:hidden" onClick={() => setOpen(false)} />}
       <div className="flex-1 md:ml-64 flex flex-col min-h-screen">
-        <header className="bg-[#0d0d0d] border-b border-white/10 px-4 h-16 flex items-center gap-3">
-          <button onClick={() => setOpen(!open)} className="md:hidden rounded-2xl border border-white/10 p-2 text-white/80 hover:bg-white/5">
+        <header className="sticky top-0 z-30 bg-[#0d0d0d] border-b border-white/10 px-4 h-16 flex items-center gap-3">
+          <button aria-label={open ? "Close navigation" : "Open navigation"} aria-expanded={open} onClick={() => setOpen(!open)} className="md:hidden rounded-2xl border border-white/10 p-2 text-white/80 hover:bg-white/5">
             {open ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </button>
           <h1 className="font-semibold text-sm uppercase tracking-[0.2em] text-white/70">{nav.find(n => n.href === pathname)?.label || "Admin"}</h1>
@@ -99,7 +100,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 ))}
               </div>
             </div>
-            <div className="text-xs text-white/50">View Store: <Link href="/" className="text-red-400 hover:text-red-300">Open</Link></div>
+            <div className="text-xs text-white/50">View Store: <Link href="/" className="text-red-400 hover:text-red-300">Open storefront</Link></div>
           </div>
         </header>
         <main className="flex-1 p-6">{children}</main>
