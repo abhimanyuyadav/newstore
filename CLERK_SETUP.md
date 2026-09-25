@@ -1,6 +1,18 @@
 # Clerk / Google sign-in rollout
 
-The Clerk integration is prepared but not activated on either live site. Existing authentication remains the default until setup and verification finish.
+The Clerk integration is deployed to both preview sites but not activated on either live site. Existing production authentication remains the default until production setup and browser verification finish.
+
+## Test deployments (September 25, 2026)
+
+- Store login: https://9teen-blzu9fk4h-abhimanyuyadav-6285s-projects.vercel.app/login
+- Admin login: https://9teen-store-admin-bvyboj4ey-abhimanyuyadav-6285s-projects.vercel.app/admin
+- Clerk application: 9TEEN Store, development instance `premium-wildcat-5141.clerk.accounts.dev`; Google and email enabled.
+- Both previews use the separate Convex development deployment `marvelous-porpoise-883`. They do not use the production catalog database.
+- Admin access is restricted to the verified owner email `avi202869@gmail.com`. Customer sign-up cannot grant admin access.
+- Clerk keys are scoped to Vercel Preview, with the secret stored as a Secret variable. They are not included in the downloadable build or source.
+- Preview session origins are restricted to the deployment and branch hosts supplied by Vercel.
+
+Production still needs an owned custom domain and production Google OAuth configuration. The existing `vercel.app` addresses cannot supply the DNS records Clerk requires. Browser OAuth verification remains pending; passing automated tests does not establish that Google sign-in has completed successfully.
 
 ## Configuration
 

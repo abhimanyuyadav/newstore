@@ -22,7 +22,9 @@ async function route(request: NextRequest, clerkUserId?: string | null) {
   return NextResponse.next();
 }
 const withClerk = clerkMiddleware(async (auth, request) => route(request, (await auth()).userId), {
-  authorizedParties: process.env.NEXT_PUBLIC_BASE_URL ? [process.env.NEXT_PUBLIC_BASE_URL] : undefined,
+  authorizedParties: process.env.VERCEL_ENV === "preview" && process.env.VERCEL_URL
+    ? [process.env.VERCEL_URL, process.env.VERCEL_BRANCH_URL].filter(Boolean).map(host => `https://${host}`)
+    : process.env.NEXT_PUBLIC_BASE_URL ? [process.env.NEXT_PUBLIC_BASE_URL] : undefined,
 });
 export default function middleware(request: NextRequest, event: NextFetchEvent) {
   return clerkEnabled() ? withClerk(request, event) : route(request);
