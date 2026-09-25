@@ -128,15 +128,15 @@ export default function ProductPage() {
               {product.badge && <span className="absolute top-3 left-3 bg-black text-white text-xs font-bold px-2.5 py-1 rounded-full">{product.badge}</span>}
           </div>
           <div className="flex flex-col">
-              <p className="text-xs font-bold uppercase tracking-widest text-black mb-2 capitalize">{product.category}</p>
+              <p className="text-xs font-bold uppercase tracking-widest text-black mb-2 capitalize">{category?.name || "Collection"}</p>
             <h1 className="text-2xl md:text-3xl font-bold leading-tight mb-3">{product.name}</h1>
             <div className="flex items-baseline gap-3 mb-4">
-              {categoryDisabled ? (
+              {categoryDisabled || (!product.inStock && product.price === 0) ? (
                 <span className="text-2xl font-bold text-orange-700">Price coming soon</span>
               ) : (
                 <>
                   <span className="text-2xl font-bold">Rs {product.price.toLocaleString()}</span>
-                  {product.originalPrice && <><span className="text-gray-400 line-through text-base">Rs {product.originalPrice.toLocaleString()}</span><span className="text-green-600 text-sm font-semibold">Save Rs {(product.originalPrice - product.price).toLocaleString()}</span></>}
+                  {product.discountEnabled && product.originalPrice && product.originalPrice > product.price && <><span className="text-gray-400 line-through text-base">Rs {product.originalPrice.toLocaleString()}</span><span className="text-green-600 text-sm font-semibold">Save Rs {(product.originalPrice - product.price).toLocaleString()}</span></>}
                 </>
               )}
             </div>
@@ -165,7 +165,7 @@ export default function ProductPage() {
             {categoryDisabled && (
               <div className="rounded-sm border border-orange-300 bg-orange-50 text-orange-900 p-4 mb-5">
                 <p className="font-semibold">Coming Soon</p>
-                <p className="text-sm">This category is currently disabled. Pricing and checkout are not available for this collection yet.</p>
+                <p className="text-sm">This collection is not available to order yet. Please check back for pricing and availability.</p>
               </div>
             )}
             <div className="flex flex-col gap-3 mt-auto">

@@ -88,6 +88,8 @@ export default function CheckoutPage() {
     }
   }, [esewaData]);
 
+  if (items.length === 0) return <div className="min-h-screen bg-white shopping-page"><Navbar /><main className="store-shell py-20 text-center"><h1 className="text-2xl font-bold mb-3">Your cart is empty</h1><p className="text-gray-600 mb-6">Add an available product to your cart before checking out.</p><Link href="/products" className="store-button">Browse products</Link></main><Footer /></div>;
+
   return (
     <div className="min-h-screen bg-white shopping-page">
       <Navbar />

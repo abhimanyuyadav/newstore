@@ -47,6 +47,9 @@ test("store boundaries, checkout, and account isolation",async()=>{
   assert.equal(publicStore["9teen_site_settings"].esewaEnabled,false);
   await alice("/api/orders");await bob("/api/orders");
   const body={requestId:randomUUID(),items:[{id:product.id,size:"M",quantity:2,price:1}],customer:{name:"Alice Test",phone:"9800000000",email:"alice@example.test",address:"Test address",city:"Test city"},paymentMethod:"whatsapp",paymentStatus:"paid",total:2};
+  await admin("/api/products","POST",[{...product,inStock:false}]);
+  assert.equal((await alice("/api/orders","POST",body)).status,400,"Unavailable products cannot be ordered");
+  await admin("/api/products","POST",[product]);
   const created=await alice("/api/orders","POST",body);
   assert.equal(created.status,201,JSON.stringify(created.data));assert.equal(created.data.total,500);assert.equal(created.data.paymentStatus,"pending");
   assert.equal((await alice("/api/orders","POST",body)).data.id,created.data.id);

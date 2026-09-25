@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import ProductCard from "@/components/ProductCard";
-import { DATA_CHANGED_EVENT, getWishlist, getProducts, toggleWishlist } from "@/lib/data";
+import { DATA_CHANGED_EVENT, getWishlist, getProducts, getCategories, toggleWishlist } from "@/lib/data";
 import type { Product } from "@/lib/types";
 import { Heart, Trash2 } from "lucide-react";
 
@@ -57,9 +57,9 @@ export default function WishlistPage() {
                   <div className="flex items-start justify-between gap-3">
                     <div>
                       <h3 className="text-lg font-semibold">{product.name}</h3>
-                      <p className="text-sm text-gray-500 mt-1">Rs {product.price.toLocaleString()}</p>
+                      <p className="text-sm text-gray-500 mt-1">{getCategories().find(c => c.id === product.category)?.enabled === false || (!product.inStock && product.price === 0) ? "Price coming soon" : `NPR ${product.price.toLocaleString()}`}</p>
                     </div>
-                    <button onClick={() => removeItem(product.id)} className="rounded-full border border-gray-200 bg-white p-2 text-gray-500 hover:bg-gray-100">
+                    <button aria-label={`Remove ${product.name} from wishlist`} onClick={() => removeItem(product.id)} className="rounded-full border border-gray-200 bg-white p-2 text-gray-500 hover:bg-gray-100">
                       <Trash2 className="w-4 h-4" />
                     </button>
                   </div>

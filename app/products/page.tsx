@@ -1,6 +1,6 @@
 "use client";
 import { useState, useMemo, useEffect, Suspense } from "react";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -11,6 +11,7 @@ import { swatchColor } from "@/lib/design";
 
 function ProductsPageContent() {
   const params = useSearchParams();
+  const router = useRouter();
   const [category, setCategory] = useState(params.get("cat") || "all");
   const [search, setSearch] = useState(params.get("search") || "");
   const [sort, setSort] = useState("featured");
@@ -35,7 +36,7 @@ function ProductsPageContent() {
     const results = products.filter(p => (!flags[collection] || p[flags[collection]]) && (category === "all" || p.category === category) && (!search || `${p.name} ${p.description} ${p.category}`.toLowerCase().includes(search.toLowerCase())) && (!size || p.sizes.includes(size)) && (!color || p.variants?.some(v => /^(color|colour|shade)$/i.test(v.name) && v.values.includes(color))) && (!stock || p.inStock && categories.find(c => c.id === p.category)?.enabled !== false) && (price === "all" || price === "under" && p.price < 1000 || price === "middle" && p.price >= 1000 && p.price <= 2000 || price === "over" && p.price > 2000));
     return results.sort((a,b) => sort === "low" ? a.price-b.price : sort === "high" ? b.price-a.price : sort === "new" ? Number(b.newArrival)-Number(a.newArrival) : Number(b.featured)-Number(a.featured));
   },[products,categories,category,search,size,color,stock,price,sort,collection]);
-  const clear = () => {setCategory("all");setSearch("");setSize("");setColor("");setStock(false);setPrice("all");};
+  const clear = () => {setCategory("all");setSearch("");setSize("");setColor("");setStock(false);setPrice("all");if (params.toString()) router.replace("/products", { scroll: false });};
   return <div className="storefront"><Navbar /><main>
     <div className="catalog-header"><div className="store-shell"><h1>{collection ? "The collection" : "Shop"}</h1><p>Discover the latest collection and find your perfect fit.</p>{collection && <Link href="/products" className="text-link mt-3">View all collections →</Link>}</div></div>
     <div className="store-shell catalog-layout">
