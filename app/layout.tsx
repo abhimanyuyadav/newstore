@@ -4,7 +4,8 @@ import DataProvider from "@/components/DataProvider";
 import { CartProvider } from "@/components/CartContext";
 
 export const metadata = {
-  title: "9TEEN Shop | Style for Every Season",
+  title: process.env.APP_SURFACE === "admin" ? "9TEEN | Store Administration" : "9TEEN Shop | Style for Every Season",
+  ...(process.env.APP_SURFACE === "admin" ? { robots: { index: false, follow: false } } : {}),
   description: "Browse the latest curated streetwear, beauty, and accessories from 9TEEN. Shop products, categories, and exclusive offers on the homepage.",
 };
 

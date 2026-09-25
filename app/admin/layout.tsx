@@ -102,7 +102,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 ))}
               </div>
             </div>
-            <div className="text-xs text-white/50">View Store: <Link href="/" className="text-red-400 hover:text-red-300">Open storefront</Link></div>
+            <div className="text-xs text-white/50">View Store: <Link href={process.env.NEXT_PUBLIC_STOREFRONT_URL || "/"} className="text-red-400 hover:text-red-300">Open storefront</Link></div>
           </div>
         </header>
         <main className="flex-1 p-6">{children}</main>

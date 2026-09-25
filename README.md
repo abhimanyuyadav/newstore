@@ -50,3 +50,7 @@ npm audit
 `lint` is the TypeScript check. `npm test` expects a completed production build and launches an isolated local server with a temporary store and generated test credentials. It exercises forged sessions, private data access, price tampering, checkout idempotency, public review filtering, registration/login/logout, and server-side order status updates. Unit tests cover token tampering/expiry, salted password hashing, cart variant/quantity behavior, and a standard HMAC test vector.
 
 These checks do not validate a real Supabase project, existing policies, image bucket permissions, eSewa merchant credentials, or an actual payment. A clean dependency audit is not a claim that the entire system is vulnerability-free.
+
+## Separate admin hosting
+
+Deploy the same source to two Vercel projects sharing CONVEX_URL and STORE_SERVER_SECRET. Set APP_SURFACE=storefront and ADMIN_APP_URL=https://9teen-store-admin.vercel.app on the store project. Set APP_SURFACE=admin and NEXT_PUBLIC_STOREFRONT_URL=https://9teenonlinestore.vercel.app on the admin project. Each project needs its own NEXT_PUBLIC_BASE_URL and SESSION_SECRET. Admin credentials belong only on the admin project. The admin root redirects to /admin; storefront /admin links redirect to the admin project. Storefront APIs never accept admin sessions. For combined local development, omit APP_SURFACE.

@@ -5,6 +5,7 @@ import { cookieOptions, failure, HttpError, isAdmin, jsonBody, rateLimit, sameOr
 export async function GET() { return NextResponse.json({ authenticated: await isAdmin() }); }
 export async function POST(req: Request) {
   try {
+    if (process.env.APP_SURFACE === "storefront") throw new HttpError(404, "Use the separate admin site to sign in");
     rateLimit(`admin:${req.headers.get("x-forwarded-for") || "local"}`, 5, 900000);
     const body = await jsonBody(req, 8192);
     const expected = process.env.ADMIN_PASSWORD;

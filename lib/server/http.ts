@@ -6,6 +6,7 @@ export class HttpError extends Error {
   constructor(public status: number, message: string) { super(message); }
 }
 export async function isAdmin() {
+  if (process.env.APP_SURFACE === "storefront") return false;
   return (await verifySession((await cookies()).get(ADMIN_COOKIE)?.value))?.role === "admin";
 }
 export async function requireAdmin() {
