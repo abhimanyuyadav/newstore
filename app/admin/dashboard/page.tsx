@@ -71,7 +71,7 @@ export default function AdminDashboardPage() {
           </div>
         </div>
 
-        <div className="grid gap-4 mt-6 xl:grid-cols-4">
+        <div className="admin-stat-grid grid grid-cols-2 gap-4 mt-6 xl:grid-cols-4">
           {[
             { label: "Total Revenue", value: `NPR ${totalRevenue.toLocaleString()}`, Icon: ShoppingBag },
             { label: "Total Orders", value: totalOrders.toString(), Icon: Package },
@@ -133,6 +133,7 @@ export default function AdminDashboardPage() {
                   </div>
                 </div>
               ))}
+              {orders.length === 0 && <p className="admin-empty-state">No orders yet. New orders will appear here.</p>}
             </div>
           </div>
         </div>
@@ -158,6 +159,7 @@ export default function AdminDashboardPage() {
                   <span className="ml-auto text-sm text-white/60">NPR {product.price.toLocaleString()}</span>
                 </div>
               ))}
+              {topProducts.length === 0 && <p className="admin-empty-state">Your best sellers will appear after your first sales.</p>}
             </div>
           </div>
 
@@ -179,6 +181,7 @@ export default function AdminDashboardPage() {
                   <span className="text-xs text-white/50">{qty} sold</span>
                 </div>
               ))}
+              {salesByCategory.length === 0 && <p className="admin-empty-state">No category sales yet. Your sales breakdown will appear here.</p>}
             </div>
           </div>
         </div>

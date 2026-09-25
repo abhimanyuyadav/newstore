@@ -38,35 +38,39 @@ function LegacyAdminLogin() {
           <div className="flex items-center justify-center w-12 h-12 bg-[#f97316]/10 rounded-xl mx-auto mb-5"><Lock className="w-5 h-5 text-[#f97316]" /></div>
           <form onSubmit={login} className="space-y-4">
             <div>
-              <label className="block text-xs font-semibold text-white/50 uppercase tracking-wider mb-1.5">Username</label>
+              <label htmlFor="admin-username" className="block text-xs font-semibold text-white/50 uppercase tracking-wider mb-1.5">Username</label>
               <input 
+                id="admin-username"
                 value={username} 
                 onChange={e => { setUsername(e.target.value); setErr(""); }} 
                 required 
                 placeholder="Admin username"
-                autoComplete="off"
+                autoComplete="username"
                 disabled={remainingTime > 0 || loading}
                 className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:ring-2 focus:ring-[#f97316] placeholder:text-white/30 disabled:opacity-50" 
               />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-white/50 uppercase tracking-wider mb-1.5">Password</label>
+              <label htmlFor="admin-password" className="block text-xs font-semibold text-white/50 uppercase tracking-wider mb-1.5">Password</label>
               <div className="relative">
                 <input 
+                  id="admin-password"
                   type={show ? "text" : "password"} 
                   value={pw} 
                   onChange={e => { setPw(e.target.value); setErr(""); }} 
                   required 
                   placeholder="Admin password"
-                  autoComplete="off"
+                  autoComplete="current-password"
                   disabled={remainingTime > 0 || loading}
                   className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white text-sm pr-10 focus:outline-none focus:ring-2 focus:ring-[#f97316] placeholder:text-white/30 disabled:opacity-50" 
                 />
                 <button 
                   type="button" 
+                  aria-label={show ? "Hide password" : "Show password"}
+                  aria-pressed={show}
                   onClick={() => setShow(!show)} 
                   disabled={remainingTime > 0 || loading}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 disabled:opacity-50"
+                  className="admin-password-toggle absolute right-1 top-1/2 -translate-y-1/2 text-white/40 disabled:opacity-50"
                 >
                   {show ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>

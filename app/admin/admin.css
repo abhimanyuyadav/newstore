@@ -25,6 +25,13 @@
 .admin-theme input::placeholder, .admin-theme textarea::placeholder { color: #738196; }
 .admin-theme :is(button,a,input,select,textarea):focus-visible { outline: 3px solid #93b7ff; outline-offset: 3px; }
 .admin-theme textarea { min-height: 100px; }
+.admin-theme .admin-empty-state { padding: 24px 16px; border: 1px dashed #dfe4ec; border-radius: 10px; color: #5b687b; font-size: 14px; line-height: 1.6; background: #fafbfd; }
+.admin-theme #admin-password { padding-right: 52px; }
+.admin-theme .admin-password-toggle { width: 44px; height: 44px; display: grid; place-items: center; }
+.admin-theme .admin-workspace main { min-width: 0; }
+.admin-theme .admin-workspace header { height: auto; min-height: 64px; padding-block: 10px; }
+.admin-theme .admin-workspace header > div { flex-wrap: wrap; justify-content: flex-end; }
+.admin-theme input,.admin-theme select,.admin-theme textarea { max-width: 100%; }
 .admin-theme table { background: #fff; }
 .admin-theme th { color: #46556b; background: #f1f4f8; }
 .admin-theme td, .admin-theme th { padding: 14px 16px; }
@@ -33,3 +40,12 @@
 .admin-catalog-tools p { color: #5b687b; font-size: 14px; margin-top: 6px; }
 .admin-catalog-tools label { display: grid; gap: 7px; font-size: 13px; font-weight: 600; }
 @media (max-width: 767px) { .admin-theme main { padding: 12px; }.admin-theme main > div > div { padding-inline: 8px; }.admin-theme header { padding-inline: 12px; }.admin-theme header > div { gap: 8px; }.admin-theme header h1 { display: none; }.admin-theme .admin-catalog-tools label { width: 100%; }.admin-theme .admin-catalog-tools { padding: 16px; }.admin-theme h1 { font-size: 26px; } }
+@media (max-width: 767px) {
+  .admin-theme .admin-stat-grid { gap: 12px; }
+  .admin-theme .admin-stat-grid > div { padding: 16px; min-width: 0; }
+  .admin-theme .admin-stat-grid p { overflow-wrap: anywhere; }
+  .admin-theme .admin-stat-grid .text-3xl { font-size: 24px; }
+  .admin-theme input:not([type="checkbox"]):not([type="radio"]),.admin-theme select,.admin-theme textarea { font-size: 16px; }
+  .admin-theme button { min-height: 44px; }
+  .admin-theme .admin-workspace main .flex.items-center.justify-between { flex-wrap: wrap; }
+}

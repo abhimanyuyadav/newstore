@@ -215,7 +215,7 @@ export default function AdminProductsPage() {
         </div>
 
         <p className="mt-4 text-sm text-gray-600">Edits save automatically. Products in disabled categories remain unavailable to buy, even when marked in stock.</p>
-        <div className="grid gap-4 mt-6 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="admin-stat-grid grid grid-cols-2 gap-4 mt-6 xl:grid-cols-4">
           <div className="rounded-3xl border border-white/10 bg-white/5 p-5">
             <p className="text-xs uppercase tracking-[0.35em] text-white/50">Total Products</p>
             <p className="text-3xl font-black mt-3">{products.length}</p>

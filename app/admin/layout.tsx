@@ -68,7 +68,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </div>
       </aside>
       {open && <div className="fixed inset-0 bg-black/50 z-30 md:hidden" onClick={() => setOpen(false)} />}
-      <div className="flex-1 md:ml-64 flex flex-col min-h-screen">
+      <div className="admin-workspace min-w-0 flex-1 md:ml-64 flex flex-col min-h-screen">
         <header className="sticky top-0 z-30 bg-[#0d0d0d] border-b border-white/10 px-4 h-16 flex items-center gap-3">
           <button aria-label={open ? "Close navigation" : "Open navigation"} aria-expanded={open} onClick={() => setOpen(!open)} className="md:hidden rounded-2xl border border-white/10 p-2 text-white/80 hover:bg-white/5">
             {open ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
