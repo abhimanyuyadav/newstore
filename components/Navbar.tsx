@@ -16,9 +16,9 @@ export default function Navbar() {
   const [q, setQ] = useState("");
   useEffect(() => { const load = () => { setSettings(getSiteSettings()); setUser(getCurrentUser()); }; load(); window.addEventListener(DATA_CHANGED_EVENT, load); return () => window.removeEventListener(DATA_CHANGED_EVENT, load); }, []);
   useEffect(() => { const close = (e: KeyboardEvent) => { if (e.key === "Escape") { setOpen(false); setSearchOpen(false); } }; window.addEventListener("keydown", close); return () => window.removeEventListener("keydown", close); }, []);
-  const links = [{ href: "/", label: "Home" }, { href: "/products?collection=newArrivals", label: "New Arrivals" }, { href: "/lookbook", label: "Lookbook" }, { href: "/products", label: settings.navLabelShop }, { href: "/#categories", label: settings.navLabelCategories }, { href: "/#collections", label: settings.navLabelCollections }, { href: "/about", label: settings.navLabelAbout }];
+  const links = [{href:"/",label:"Home"},{href:"/products",label:settings.navLabelShop},{href:"/#categories",label:settings.navLabelCategories},{href:"/products?collection=sale",label:"Deals"},{href:"/products?collection=newArrivals",label:"New Arrivals"},{href:"/lookbook",label:"Lookbook"}];
   return <><header className="store-header">
-    {settings.promoText && <div className="store-announcement">{settings.promoText}</div>}
+    <div className="store-announcement"><div className="store-shell utility-bar"><span>{settings.promoText}</span><div><Link href="/about">Help &amp; Support</Link><Link href="/track-order">Track Order</Link><span>NPR</span></div></div></div>
     <div className="store-nav store-shell">
       <button className="icon-button mobile-menu-toggle" aria-label={open ? "Close menu" : "Open menu"} aria-expanded={open} aria-controls="mobile-navigation" onClick={() => { setOpen(!open); setSearchOpen(false); }}>{open ? <X /> : <Menu />}</button>
       <Link href="/" className="store-wordmark" aria-label={`${settings.siteName} home`}>{settings.siteName.startsWith("9") ? <><span className="brand-nine">9</span>{settings.siteName.slice(1)}</> : settings.siteName}</Link>

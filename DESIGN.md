@@ -17,3 +17,9 @@ This redesign builds on the store reliability changes. Production server configu
 The supplied multi-page 9TEEN design board supersedes the earlier editorial direction. The storefront now uses sans-serif headings, white and pale blue surfaces, lime primary actions, compact portrait cards, real product color swatches, desktop sidebar filters, and fixed mobile navigation. Added a catalog-backed lookbook. Cart and checkout use rounded summary panels and checkout product thumbnails.
 
 Existing catalog photos and configured payment methods remain in use. No fictional stock, reviews, delivery promises, newsletter backend, or unsupported payment options were added from the reference board. Custom homepage copy remains editable; the original default heading is presented as “Style for Real You.” in this design.
+
+## Latest warm neutral reference
+
+The latest supplied Shopio reference supersedes the lime design direction. The 9TEEN brand remains. The homepage now has a wide beige campaign hero, black primary buttons, circular categories with real catalog item counts, and two original still-life campaign banners. Shared shopping controls use neutral colors. Existing catalog data, configurable section order and custom hero images remain supported.
+
+Three campaign images were made with the built-in image generation tool. Asset paths and exact prompts are recorded in CAMPAIGN_ARTWORK.md. These images are illustrative campaign styling, not newly created catalog inventory.
