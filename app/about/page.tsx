@@ -1,13 +1,12 @@
+"use client";
+import { useEffect, useState } from "react";
 import Link from "next/link";
-
+import { ArrowUpRight } from "lucide-react";
+import Navbar from "@/components/Navbar";
+import Footer from "@/components/Footer";
+import { defaultSiteSettings, getSiteSettings, DATA_CHANGED_EVENT } from "@/lib/data";
 export default function AboutPage() {
-  return (
-    <div className="min-h-screen bg-white text-black">
-      <div className="max-w-4xl mx-auto px-4 py-16">
-        <h1 className="text-4xl font-bold mb-4">About 9TEEN</h1>
-        <p className="text-gray-700 leading-relaxed mb-6">9TEEN is a modern fashion destination for the next generation. We curate bold, comfortable, and confident styles designed for everyday wear.</p>
-        <Link href="/" className="text-sm font-semibold text-[#f97316] hover:underline">Back to home</Link>
-      </div>
-    </div>
-  );
+  const [settings, setSettings] = useState(defaultSiteSettings);
+  useEffect(() => { const load = () => setSettings(getSiteSettings()); load(); window.addEventListener(DATA_CHANGED_EVENT, load); return () => window.removeEventListener(DATA_CHANGED_EVENT, load); }, []);
+  return <div className="storefront"><Navbar /><main className="store-shell"><section className="brand-statement"><p className="eyebrow">THE STORY OF {settings.siteName}</p><h1 className="text-5xl md:text-7xl tracking-tight my-8">{settings.tagline}</h1><p className="max-w-xl text-sm leading-8 text-gray-600 mb-8">{settings.siteName} is a modern fashion destination for the next generation. We curate bold, comfortable, and confident styles designed for everyday wear.</p><Link href="/products" className="store-button">Explore the collection<ArrowUpRight width={18} height={18} /></Link></section></main><Footer /></div>;
 }

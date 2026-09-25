@@ -2,94 +2,34 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ShoppingCart, Search, Menu, X, Heart, User } from "lucide-react";
+import { ShoppingBag, Search, Menu, X, Heart, User } from "lucide-react";
 import { useCart } from "@/components/CartContext";
-import { DATA_CHANGED_EVENT, getSiteSettings, defaultSiteSettings, getCurrentUser, isUserLoggedIn } from "@/lib/data";
-
+import { DATA_CHANGED_EVENT, getSiteSettings, defaultSiteSettings, getCurrentUser } from "@/lib/data";
 export default function Navbar() {
   const router = useRouter();
   const [settings, setSettings] = useState(defaultSiteSettings);
   const [user, setUser] = useState(getCurrentUser());
   const { count } = useCart();
   const [open, setOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
   const [q, setQ] = useState("");
-
-  useEffect(() => {
-    const loadSettings = () => {
-      setSettings(getSiteSettings());
-      setUser(getCurrentUser());
-    };
-
-    loadSettings();
-    window.addEventListener(DATA_CHANGED_EVENT, loadSettings);
-    return () => window.removeEventListener(DATA_CHANGED_EVENT, loadSettings);
-  }, []);
-
-  const handleSearchSubmit = () => {
-    const query = q.trim();
-    router.push(`/products${query ? `?search=${encodeURIComponent(query)}` : ""}`);
-  };
-
-  return (
-    <header className="bg-white border-b border-gray-100">
-      {/* Promo */}
-      <div className="bg-black text-white text-xs py-1">
-        <div className="max-w-7xl mx-auto px-4 flex justify-center">{settings.promoText}</div>
+  useEffect(() => { const load = () => { setSettings(getSiteSettings()); setUser(getCurrentUser()); }; load(); window.addEventListener(DATA_CHANGED_EVENT, load); return () => window.removeEventListener(DATA_CHANGED_EVENT, load); }, []);
+  useEffect(() => { const close = (e: KeyboardEvent) => { if (e.key === "Escape") { setOpen(false); setSearchOpen(false); } }; window.addEventListener("keydown", close); return () => window.removeEventListener("keydown", close); }, []);
+  const links = [{ href: "/products", label: settings.navLabelShop }, { href: "/#categories", label: settings.navLabelCategories }, { href: "/#collections", label: settings.navLabelCollections }, { href: "/about", label: settings.navLabelAbout }];
+  return <header className="store-header">
+    {settings.promoText && <div className="store-announcement">{settings.promoText}</div>}
+    <div className="store-nav store-shell">
+      <button className="icon-button mobile-menu-toggle" aria-label={open ? "Close menu" : "Open menu"} aria-expanded={open} aria-controls="mobile-navigation" onClick={() => { setOpen(!open); setSearchOpen(false); }}>{open ? <X /> : <Menu />}</button>
+      <Link href="/" className="store-wordmark" aria-label={`${settings.siteName} home`}>{settings.siteName}</Link>
+      <nav className="desktop-navigation" aria-label="Main navigation">{links.map(link => <Link key={link.label} href={link.href}>{link.label}</Link>)}</nav>
+      <div className="nav-actions">
+        <button className="icon-button" aria-label={searchOpen ? "Close search" : "Search products"} aria-expanded={searchOpen} aria-controls="store-search" onClick={() => { setSearchOpen(!searchOpen); setOpen(false); }}><Search /></button>
+        <Link className="icon-button account-icon" href={user ? "/account" : "/login"} aria-label={user ? "My account" : "Sign in"}><User /></Link>
+        <Link className="icon-button wishlist-icon" href="/wishlist" aria-label="Wishlist"><Heart /></Link>
+        <Link className="icon-button bag-link" href="/cart" aria-label={`Shopping bag, ${count} items`}><ShoppingBag />{count > 0 && <span className="bag-count">{count}</span>}</Link>
       </div>
-
-      <div className="max-w-7xl mx-auto px-4 py-3 flex items-center gap-4">
-        <div className="flex items-center gap-4">
-          <button onClick={() => setOpen(!open)} className="md:hidden p-2 rounded-md hover:bg-gray-100">
-            {open ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-          </button>
-          <Link href="/" className="font-black text-lg">{settings.siteName}</Link>
-        </div>
-
-        <nav className="hidden md:flex ml-6 gap-4 text-sm text-gray-600 items-center">
-          <Link href="/products" className="hover:text-[#f97316]">{settings.navLabelShop}</Link>
-          <Link href="/products" className="hover:text-[#f97316]">{settings.navLabelCategories}</Link>
-          <Link href="/products" className="hover:text-[#f97316]">{settings.navLabelCollections}</Link>
-          <Link href="/track-order" className="hover:text-[#f97316]">{settings.navLabelTrackOrder}</Link>
-          <Link href="/about" className="hover:text-[#f97316]">{settings.navLabelAbout}</Link>
-          <Link href={isUserLoggedIn() ? "/account" : "/login"} className="hover:text-[#f97316]">{user ? user.name.split(" ")[0] : settings.navLabelLogin}</Link>
-          <Link href="/admin" className="hover:text-[#f97316]">Admin</Link>
-        </nav>
-
-        <div className="flex-1 hidden md:flex items-center justify-center px-4">
-          <div className="w-full max-w-2xl relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-            <input value={q} onChange={e => setQ(e.target.value)} onKeyDown={e => e.key === "Enter" && handleSearchSubmit()} placeholder={settings.searchPlaceholder}
-              className="w-full border border-gray-200 rounded-full py-2 pl-10 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-[#f97316]" />
-          </div>
-        </div>
-
-        <div className="ml-auto flex items-center gap-3">
-          <Link href={isUserLoggedIn() ? "/account" : "/login"} className="hidden md:inline-flex items-center gap-2 text-sm text-gray-600 hover:text-[#f97316]">{user ? user.name.split(" ")[0] : settings.navLabelLogin}</Link>
-          <Link href="/wishlist" className="hidden md:inline-flex p-2 rounded-md hover:bg-gray-100"><Heart className="w-5 h-5" /></Link>
-          <Link href="/account" className="hidden md:inline-flex p-2 rounded-md hover:bg-gray-100"><User className="w-5 h-5" /></Link>
-          <Link href="/cart" className="relative p-2 rounded-md hover:bg-gray-100">
-            <ShoppingCart className="w-5 h-5" />
-            {count > 0 && <span className="absolute -top-1 -right-1 bg-[#f97316] text-white rounded-full text-[10px] px-1">{count}</span>}
-          </Link>
-        </div>
-      </div>
-
-      {/* Mobile menu */}
-      {open && (
-        <div className="md:hidden bg-white border-t border-gray-100">
-          <div className="px-4 py-3 space-y-2">
-            <Link href="/products" className="block py-2">{settings.navLabelShop}</Link>
-            <Link href="/products" className="block py-2">{settings.navLabelCategories}</Link>
-            <Link href="/products" className="block py-2">{settings.navLabelCollections}</Link>
-            <Link href="/track-order" className="block py-2">{settings.navLabelTrackOrder}</Link>
-            <Link href="/about" className="block py-2">{settings.navLabelAbout}</Link>
-            <Link href={isUserLoggedIn() ? "/account" : "/login"} className="block py-2">{user ? user.name.split(" ")[0] : settings.navLabelLogin}</Link>
-            <Link href="/wishlist" className="block py-2">Wishlist</Link>
-            <Link href="/account" className="block py-2">Account</Link>
-            <Link href="/admin" className="block py-2">Admin Panel</Link>
-          </div>
-        </div>
-      )}
-    </header>
-  );
+    </div>
+    {searchOpen && <form id="store-search" role="search" className="store-search store-shell" onSubmit={e => { e.preventDefault(); setSearchOpen(false); router.push(`/products${q.trim() ? `?search=${encodeURIComponent(q.trim())}` : ""}`); }}><Search width={18} height={18} /><input aria-label="Search products" autoFocus value={q} onChange={e => setQ(e.target.value)} placeholder={settings.searchPlaceholder} /><button type="submit" className="text-link">Search</button></form>}
+    {open && <nav id="mobile-navigation" className="mobile-navigation store-shell" aria-label="Mobile navigation">{[...links, { href: "/track-order", label: settings.navLabelTrackOrder }, { href: user ? "/account" : "/login", label: user ? "My account" : settings.navLabelLogin }, { href: "/wishlist", label: "Wishlist" }].map(link => <Link key={link.label} href={link.href} onClick={() => setOpen(false)}>{link.label}</Link>)}</nav>}
+  </header>;
 }

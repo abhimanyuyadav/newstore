@@ -41,7 +41,7 @@ export default function AccountPage() {
         </div>
 
         <div className="grid gap-6 lg:grid-cols-[1fr_1.2fr]">
-          <section className="rounded-[2rem] border border-gray-200 bg-gray-50 p-6">
+          <section className="rounded-sm border border-gray-200 bg-gray-50 p-6">
             <h2 className="text-xl font-bold mb-4">Profile</h2>
             <div className="space-y-3 text-sm text-gray-700">
               <p><span className="font-semibold text-black">Name:</span> {user.name}</p>
@@ -52,14 +52,14 @@ export default function AccountPage() {
             </div>
           </section>
 
-          <section className="rounded-[2rem] border border-gray-200 bg-white p-6">
+          <section className="rounded-sm border border-gray-200 bg-white p-6">
             <h2 className="text-xl font-bold mb-4">Order history</h2>
             {orders.length === 0 ? (
               <p className="text-gray-500">No orders yet. Your recent purchases will appear here.</p>
             ) : (
               <div className="space-y-4">
                 {orders.map(order => (
-                  <div key={order.id} className="rounded-3xl border border-gray-200 bg-gray-50 p-4">
+                  <div key={order.id} className="rounded-sm border border-gray-200 bg-gray-50 p-4">
                     <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                       <div>
                         <p className="font-semibold text-black">Order #{order.id}</p>

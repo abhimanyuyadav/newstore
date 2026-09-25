@@ -87,15 +87,15 @@ export default function CheckoutPage() {
   }, [esewaData]);
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-white">
       <Navbar />
       <div className="max-w-3xl mx-auto px-4 py-6">
-        <Link href="/cart" className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-[#f97316] mb-5 transition-colors"><ArrowLeft className="w-4 h-4" />Back to Cart</Link>
+        <Link href="/cart" className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-black mb-5 transition-colors"><ArrowLeft className="w-4 h-4" />Back to Cart</Link>
         <h1 className="text-2xl font-bold mb-6">Checkout</h1>
         <div className="grid grid-cols-1 md:grid-cols-5 gap-5">
           <form onSubmit={handleSubmit} className="md:col-span-3 space-y-4">
-            {error && <p role="alert" className="bg-red-50 text-red-700 p-3 rounded-xl">{error}</p>}
-            <div className="bg-white rounded-xl p-4 border border-gray-100 space-y-3">
+            {error && <p role="alert" className="bg-red-50 text-red-700 p-3 rounded-sm">{error}</p>}
+            <div className="bg-white rounded-sm p-4 border border-gray-100 space-y-3">
               <h2 className="font-bold">Delivery Information</h2>
               {[
                 { key: "name", label: "Full Name", type: "text", placeholder: "Your full name" },
@@ -109,40 +109,40 @@ export default function CheckoutPage() {
                   <input id={f.key} required={f.req !== false} type={f.type} placeholder={f.placeholder}
                     value={form[f.key as keyof typeof form]}
                     onChange={e => setForm({ ...form, [f.key]: e.target.value })}
-                    className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#f97316]" />
+                    className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black" />
                 </div>
               ))}
-              <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4">
+              <div className="rounded-sm border border-gray-200 bg-gray-50 p-4">
                 <p className="text-sm font-semibold text-gray-700 mb-3">Payment method</p>
                 <div className="grid grid-cols-2 gap-3">
                   {paymentOptions.map(option => (
                     <button key={option.value} type="button" onClick={() => setPaymentMethod(option.value)}
-                      className={`rounded-2xl border px-4 py-3 text-sm font-semibold transition ${paymentMethod === option.value ? "border-[#f97316] bg-[#ffedd5] text-[#b45309]" : "border-gray-200 bg-white text-gray-700 hover:border-gray-300"}`}>
+                      className={`rounded-sm border px-4 py-3 text-sm font-semibold transition ${paymentMethod === option.value ? "border-black bg-gray-100 text-black" : "border-gray-200 bg-white text-gray-700 hover:border-gray-300"}`}>
                       {option.label}
                     </button>
                   ))}
                 </div>
                 {paymentMethod === "esewa" && settings.esewaQrImage && (
-                  <div className="mt-4 rounded-2xl border border-dashed border-gray-300 bg-white p-4 text-center">
+                  <div className="mt-4 rounded-sm border border-dashed border-gray-300 bg-white p-4 text-center">
                     <p className="text-sm text-gray-600 mb-3">{settings.esewaDescription || "Scan this QR in your eSewa app to pay faster."}</p>
                     <img src={settings.esewaQrImage} alt="eSewa QR" className="mx-auto h-40 object-contain" />
                   </div>
                 )}
                 {paymentMethod === "whatsapp" && (
-                  <div className="mt-4 rounded-2xl border border-gray-200 bg-white p-4">
+                  <div className="mt-4 rounded-sm border border-gray-200 bg-white p-4">
                     <p className="text-sm font-semibold text-gray-700 mb-2">WhatsApp Message</p>
                     <textarea value={whatsappMessage} onChange={e => setWhatsappMessage(e.target.value)} rows={4}
-                      className="w-full rounded-2xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#f97316]" />
+                      className="w-full rounded-sm border border-gray-200 bg-gray-50 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black" />
                   </div>
                 )}
               </div>
             </div>
             <button type="submit" disabled={loading || items.length === 0}
-              className="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-4 rounded-xl text-sm flex items-center justify-center gap-2 transition-colors disabled:opacity-50">
+              className="w-full bg-black hover:bg-gray-800 text-white font-bold py-4 rounded-sm text-sm flex items-center justify-center gap-2 transition-colors disabled:opacity-50">
               {loading ? <><Loader2 className="w-4 h-4 animate-spin" />Preparing your order...</> : paymentMethod === "esewa" ? `Pay Rs ${total.toLocaleString()} via ${settings.esewaLabel || "eSewa"}` : `Place order for Rs ${total.toLocaleString()} via WhatsApp`}
             </button>
           </form>
-          <div className="md:col-span-2 bg-white rounded-xl border border-gray-100 p-4 h-fit">
+          <div className="md:col-span-2 bg-white rounded-sm border border-gray-100 p-4 h-fit">
             <h2 className="font-bold mb-3">Order Summary</h2>
             <div className="space-y-3 text-sm">
               {items.map(i => (

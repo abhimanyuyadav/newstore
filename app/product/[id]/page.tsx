@@ -49,12 +49,12 @@ export default function ProductPage() {
 
 
   if (!hydrated) {
-    return <div className="min-h-screen bg-[#fafafa] flex items-center justify-center"><div className="text-sm text-gray-500">Loading product…</div></div>;
+    return <div className="min-h-screen bg-white flex items-center justify-center"><div className="text-sm text-gray-500">Loading product…</div></div>;
   }
 
   if (!product) {
     return (
-      <div className="min-h-screen bg-[#fafafa]">
+      <div className="min-h-screen bg-white">
         <Navbar />
         <div className="max-w-3xl mx-auto px-4 py-20 text-center">
           <h1 className="text-2xl font-bold mb-2">Product not found</h1>
@@ -118,12 +118,12 @@ export default function ProductPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#fafafa]">
+    <div className="min-h-screen bg-white">
       <Navbar />
       <div className="max-w-7xl mx-auto px-4 py-6">
-        <Link href="/products" className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-[#f97316] mb-6 transition-colors"><ArrowLeft className="w-4 h-4" />Back</Link>
+        <Link href="/products" className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-black mb-6 transition-colors"><ArrowLeft className="w-4 h-4" />Back</Link>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12">
-          <div className="relative h-80 md:h-[500px] rounded-2xl overflow-hidden bg-gray-100">
+          <div className="relative h-80 md:h-[500px] rounded-sm overflow-hidden bg-gray-100">
             <Image src={product.image} alt={product.name} fill className="object-cover" sizes="(max-width:768px) 100vw,50vw" />
               {product.badge && <span className="absolute top-3 left-3 bg-black text-white text-xs font-bold px-2.5 py-1 rounded-full">{product.badge}</span>}
           </div>
@@ -163,33 +163,32 @@ export default function ProductPage() {
               </div>
             ))}
             {categoryDisabled && (
-              <div className="rounded-3xl border border-orange-300 bg-orange-50 text-orange-900 p-4 mb-5">
+              <div className="rounded-sm border border-orange-300 bg-orange-50 text-orange-900 p-4 mb-5">
                 <p className="font-semibold">Coming Soon</p>
                 <p className="text-sm">This category is currently disabled. Pricing and checkout are not available for this collection yet.</p>
               </div>
             )}
             <div className="flex flex-col gap-3 mt-auto">
-                {added ? <><Check className="w-4 h-4" />Added!</> : <><ShoppingCart className="w-4 h-4" />Add to Cart</>}
-                <button onClick={addToCart} disabled={!product.inStock || categoryDisabled} className={`w-full py-3.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all ${added ? "bg-green-500 text-white" : "bg-black hover:bg-black text-white"} disabled:opacity-50`}>
+                <button onClick={addToCart} disabled={!product.inStock || categoryDisabled} className={`w-full py-3.5 rounded-sm font-bold text-sm flex items-center justify-center gap-2 transition-all ${added ? "bg-green-500 text-white" : "bg-black hover:bg-black text-white"} disabled:opacity-50`}>
                   {added ? <><Check className="w-4 h-4" />Added!</> : <><ShoppingCart className="w-4 h-4" />Add to Cart</>}
                 </button>
               <button onClick={() => {
                 if (!product.inStock || categoryDisabled) return;
                 const message = `Hi, I am interested in ${product.name} priced at NPR ${product.price.toLocaleString()}. Please send details.`;
                 window.open(buildWhatsappLink(settings.whatsappNumber, message), "_blank");
-              }} disabled={!product.inStock || categoryDisabled} className="w-full py-3.5 rounded-xl font-bold text-sm border border-green-500 text-green-700 bg-white hover:bg-green-50 transition-colors disabled:opacity-50">
+              }} disabled={!product.inStock || categoryDisabled} className="w-full py-3.5 rounded-sm font-bold text-sm border border-gray-300 text-gray-700 bg-white hover:bg-gray-50 transition-colors disabled:opacity-50">
                 Message on WhatsApp
               </button>
-              <button onClick={buyNow} disabled={!product.inStock || categoryDisabled} className="w-full py-3.5 rounded-xl font-bold text-sm bg-amber-500 hover:bg-amber-400 text-black text-center transition-colors disabled:opacity-50">
+              <button onClick={buyNow} disabled={!product.inStock || categoryDisabled} className="w-full py-3.5 rounded-sm font-bold text-sm bg-white hover:bg-gray-100 text-black border border-gray-300 text-center transition-colors disabled:opacity-50">
                 {settings.esewaEnabled ? "Buy Now with eSewa" : "Checkout"}
               </button>
             </div>
-            <div className="mt-4 p-3 bg-white rounded-xl border border-gray-100 text-xs text-gray-500 flex flex-wrap gap-3">
+            <div className="mt-4 p-3 bg-white rounded-sm border border-gray-100 text-xs text-gray-500 flex flex-wrap gap-3">
               <span>Free delivery in Kathmandu</span><span>7-day returns</span><span>100% Authentic</span>
             </div>
           </div>
         </div>
-        <div className="mt-12 rounded-3xl border border-gray-200 bg-white p-6">
+        <div className="mt-12 rounded-sm border border-gray-200 bg-white p-6">
           <div className="flex items-center justify-between gap-4 mb-6">
             <div>
               <h2 className="text-xl font-bold">Customer Reviews</h2>
@@ -205,7 +204,7 @@ export default function ProductPage() {
           ) : (
             <div className="space-y-4">
               {reviews.map(review => (
-                <div key={review.id} className="rounded-3xl border border-gray-100 bg-gray-50 p-4">
+                <div key={review.id} className="rounded-sm border border-gray-100 bg-gray-50 p-4">
                   <div className="flex items-center justify-between gap-3">
                     <p className="font-semibold text-gray-900">{review.name}</p>
                     <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-700"><Star className="w-3 h-3" />{review.rating}</span>
@@ -217,33 +216,33 @@ export default function ProductPage() {
             </div>
           )}
 
-          <form onSubmit={handleReviewSubmit} className="mt-8 rounded-3xl border border-gray-100 bg-gray-50 p-5">
+          <form onSubmit={handleReviewSubmit} className="mt-8 rounded-sm border border-gray-100 bg-gray-50 p-5">
             <h3 className="text-lg font-semibold mb-4">Write a review</h3>
             <div className="grid gap-4 md:grid-cols-3">
               <label className="block text-sm text-gray-600">
                 Your name
                 <input value={reviewForm.name} onChange={e => setReviewForm(prev => ({ ...prev, name: e.target.value }))}
-                  className="mt-2 w-full rounded-2xl border border-gray-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#f97316]" />
+                  className="mt-2 w-full rounded-sm border border-gray-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black" />
               </label>
               <label className="block text-sm text-gray-600">
                 Rating
                 <select value={reviewForm.rating} onChange={e => setReviewForm(prev => ({ ...prev, rating: Number(e.target.value) }))}
-                  className="mt-2 w-full rounded-2xl border border-gray-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#f97316]">
+                  className="mt-2 w-full rounded-sm border border-gray-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black">
                   {[5, 4, 3, 2, 1].map(value => <option key={value} value={value}>{value} stars</option>)}
                 </select>
               </label>
               <label className="block text-sm text-gray-600">
                 Date
                 <input value={new Date().toISOString().slice(0, 10)} disabled
-                  className="mt-2 w-full rounded-2xl border border-gray-200 bg-gray-100 px-3 py-2 text-sm text-gray-400" />
+                  className="mt-2 w-full rounded-sm border border-gray-200 bg-gray-100 px-3 py-2 text-sm text-gray-400" />
               </label>
             </div>
             <label className="block text-sm text-gray-600 mt-4">
               Review
               <textarea value={reviewForm.comment} onChange={e => setReviewForm(prev => ({ ...prev, comment: e.target.value }))} rows={4}
-                className="mt-2 w-full rounded-2xl border border-gray-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#f97316]" />
+                className="mt-2 w-full rounded-sm border border-gray-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black" />
             </label>
-            <button type="submit" className="mt-4 inline-flex items-center justify-center rounded-2xl bg-black px-5 py-3 text-sm font-semibold text-white hover:bg-gray-900 transition">Submit Review</button>
+            <button type="submit" className="mt-4 inline-flex items-center justify-center rounded-sm bg-black px-5 py-3 text-sm font-semibold text-white hover:bg-gray-900 transition">Submit Review</button>
             {reviewSubmitted && <p className="mt-3 text-sm text-green-600">Thank you! Your review has been submitted for approval.</p>}
           </form>
         </div>

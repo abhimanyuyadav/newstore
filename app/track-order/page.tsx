@@ -28,7 +28,7 @@ export default function TrackOrderPage() {
   const stepIndex = order ? steps.findIndex(s => s.key === order.status) : -1;
 
   return (
-    <div className="min-h-screen bg-[#fafafa]">
+    <div className="min-h-screen bg-white">
       <Navbar />
       <div className="bg-[#0d0d0d] px-4 py-8">
         <div className="max-w-2xl mx-auto text-center">
@@ -47,7 +47,7 @@ export default function TrackOrderPage() {
         </div>
         {notFound && <div className="text-center text-gray-400 py-8"><p className="font-semibold">Order not found</p></div>}
         {order && (
-          <div className="bg-white rounded-2xl border border-gray-100 p-5">
+          <div className="bg-white rounded-sm border border-gray-100 p-5">
             <div className="flex justify-between items-start flex-wrap gap-2 mb-6">
               <div><p className="text-xs text-gray-400">Order ID</p><p className="font-mono font-bold text-sm">{order.id}</p></div>
               <div className="text-right"><p className="text-xs text-gray-400">Total</p><p className="font-bold">Rs {order.total?.toLocaleString()}</p></div>
@@ -60,12 +60,12 @@ export default function TrackOrderPage() {
                   const done = i <= stepIndex;
                   return (
                     <div key={step.key} className="flex items-start gap-3 relative">
-                      <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 z-10 ${done ? (i === stepIndex ? "bg-[#f97316]" : "bg-green-500") : "bg-gray-100"}`}>
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 z-10 ${done ? (i === stepIndex ? "bg-black" : "bg-green-500") : "bg-gray-100"}`}>
                         <step.Icon className={`w-4 h-4 ${done ? "text-white" : "text-gray-400"}`} />
                       </div>
                       <div className="pt-1">
                         <p className={`font-semibold text-sm ${done ? "text-[#1e293b]" : "text-gray-400"}`}>{step.label}</p>
-                        {i === stepIndex && <p className="text-xs text-[#f97316] mt-0.5">Current status</p>}
+                        {i === stepIndex && <p className="text-xs text-black mt-0.5">Current status</p>}
                       </div>
                     </div>
                   );
