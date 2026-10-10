@@ -15,7 +15,7 @@ export const metadata: Metadata = {
   // Public pages opt in individually; Next's automatic 404 noindex stays unambiguous.
   ...(!indexingEnabled() ? { robots: { index: false, follow: false } } : {}),
   ...(process.env.GOOGLE_SITE_VERIFICATION ? { verification: { google: process.env.GOOGLE_SITE_VERIFICATION } } : {}),
-  icons: { icon: { url: "/favicon.png", type: "image/png", sizes: "150x150" }, shortcut: "/favicon.png" },
+  icons: { icon: { url: "/favicon.png", type: "image/png", sizes: "150x150" }, shortcut: "/favicon.png", apple: { url: "/apple-icon.png", sizes: "150x150" } },
   manifest: "/site.webmanifest",
 };
 const dmSans = DM_Sans({ subsets: ["latin"], weight: ["300", "400", "500", "600", "700", "800"], variable: "--font-dm-sans", display: "swap" });
