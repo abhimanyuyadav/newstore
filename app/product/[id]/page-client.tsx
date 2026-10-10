@@ -95,7 +95,7 @@ export default function ProductPage() {
     <div className="min-h-screen bg-white product-detail-page">
       <Navbar />
       <div className="store-shell shopping-content">
-        <Link href="/products" className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-black mb-6 transition-colors"><ArrowLeft className="w-4 h-4" />Back</Link>
+        <nav aria-label="Breadcrumb" className="flex flex-wrap items-center gap-2 text-sm text-gray-600 mb-6"><Link href="/" className="underline">9TEEN Collection</Link><span aria-hidden="true">/</span><Link href="/products" className="underline">Shop clothing</Link><span aria-hidden="true">/</span><span aria-current="page">{product.name.trim()}</span></nav>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12">
           <div className="relative h-[420px] md:h-[580px] rounded-sm overflow-hidden bg-gray-100">
             <Image src={product.image} alt={product.name} fill priority className="object-cover" sizes="(max-width:768px) 100vw,50vw" />

@@ -46,4 +46,4 @@ export default async function middleware(request: NextRequest, event: NextFetchE
   }
   return response;
 }
-export const config = { matcher: ["/((?!_next/|images/|favicon.svg|site.webmanifest).*)"] };
+export const config = { matcher: ["/((?!_next/|images/|favicon.svg|favicon.png|apple-icon.png|site.webmanifest).*)"] };

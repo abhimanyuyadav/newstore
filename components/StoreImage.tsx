@@ -3,7 +3,7 @@ import { isOptimizedRemoteImage, type RemoteImageSource } from "@/lib/image-poli
 
 const sources: RemoteImageSource[] = JSON.parse(process.env.NEXT_PUBLIC_OPTIMIZED_IMAGE_SOURCES || '[{"protocol":"https","hostname":"images.unsplash.com"}]');
 export default function StoreImage(props: ImageProps) {
-  const src = typeof props.src === "string" && !props.src ? "/favicon.svg" : props.src;
+  const src = typeof props.src === "string" && !props.src ? "/favicon.png" : props.src;
   // Optimize configured uploads; arbitrary external image URLs retain their fallback.
   const external = typeof src === "string" && /^https?:/.test(src);
   const unoptimized = external && !isOptimizedRemoteImage(src, sources);

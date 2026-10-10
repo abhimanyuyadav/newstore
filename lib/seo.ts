@@ -6,8 +6,8 @@ if (configured.protocol !== "https:" || configured.username || configured.passwo
   throw new Error("SEO_SITE_URL must be an HTTPS origin without credentials, path, query, or fragment");
 }
 export const SITE_URL = configured.origin;
-export const SITE_NAME = "9TEEN";
-export const DEFAULT_DESCRIPTION = "Shop clothing online in Nepal with 9TEEN Collection. Explore current styles, compare prices in Nepalese rupees, and check sizes and availability.";
+export const SITE_NAME = "9TEEN Collection";
+export const DEFAULT_DESCRIPTION = "9TEEN Collection is an online fashion store in Nepal. Shop clothing, explore new arrivals, and check product details, sizes and prices in Nepalese rupees.";
 export const SOCIAL_IMAGE = "/images/campaign/warm-hero.png";
 export const publicPaths = ["/", "/products", "/about", "/lookbook"];
 export function isPublicPage(path: string) {
