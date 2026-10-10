@@ -1,5 +1,5 @@
 "use client";
-import React, { createContext, useContext, useReducer, useEffect, useState } from "react";
+import React, { createContext, useContext, useReducer, useEffect, useState, useMemo } from "react";
 import { CartItem } from "@/lib/types";
 
 
@@ -42,7 +42,7 @@ export function reducer(state: State, action: Action): State {
 		case "CLEAR":
 			return { items: [] };
 		case "INIT":
-			return { items: action.items };
+			return state.items.length === 0 && action.items.length === 0 ? state : { items: action.items };
 		default:
 			return state;
 	}
@@ -104,10 +104,10 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 		if (loaded) void persistCartToSharedStorage(state.items);
 	}, [state.items, loaded]);
 
-	const { total, count } = calcTotals(state.items);
+	const value = useMemo(() => ({ items: state.items, ...calcTotals(state.items), dispatch }), [state.items]);
 
 	return (
-		<CartContext.Provider value={{ items: state.items, total, count, dispatch }}>
+		<CartContext.Provider value={value}>
 			{children}
 		</CartContext.Provider>
 	);

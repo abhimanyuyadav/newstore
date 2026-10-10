@@ -2,16 +2,20 @@ import type { NextConfig } from "next";
 const clerkHost = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY ? Buffer.from(process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY.split("_").slice(2).join("_"), "base64").toString().replace(/\$/, "") : "";
 const clerkOrigin = /^[a-z0-9.-]+$/i.test(clerkHost) ? "https://" + clerkHost : "";
 const clerkSources = process.env.NEXT_PUBLIC_AUTH_PROVIDER === "clerk" ? " " + clerkOrigin + " https://challenges.cloudflare.com" : "";
+const remoteImagePatterns = [
+  ...(process.env.CONVEX_URL ? [{ protocol: "https" as const, hostname: new URL(process.env.CONVEX_URL).hostname, pathname: "/api/storage/**" }] : []),
+  { protocol: "https" as const, hostname: "images.unsplash.com" },
+  ...(process.env.NEXT_PUBLIC_SUPABASE_URL ? [{ protocol: "https" as const, hostname: new URL(process.env.NEXT_PUBLIC_SUPABASE_URL).hostname, pathname: "/storage/v1/object/public/**" }] : []),
+];
 const nextConfig: NextConfig = {
   output: "standalone",
+  // Only public host/path rules are exposed, never storage credentials.
+  env: { NEXT_PUBLIC_OPTIMIZED_IMAGE_SOURCES: JSON.stringify(remoteImagePatterns) },
   // Resolve product existence and metadata before streaming an HTTP response.
   htmlLimitedBots: /.*/,
   images: {
-    remotePatterns: [
-      ...(process.env.CONVEX_URL ? [{ protocol: "https" as const, hostname: new URL(process.env.CONVEX_URL).hostname, pathname: "/api/storage/**" }] : []),
-      { protocol: "https", hostname: "images.unsplash.com" },
-      ...(process.env.NEXT_PUBLIC_SUPABASE_URL ? [{ protocol: "https" as const, hostname: new URL(process.env.NEXT_PUBLIC_SUPABASE_URL).hostname, pathname: "/storage/v1/object/public/**" }] : []),
-    ],
+    deviceSizes: [360, 480, 640, 750, 828, 1080, 1200, 1344, 1600, 1920, 2048, 3840],
+    remotePatterns: remoteImagePatterns,
   },
   async headers() {
     return [

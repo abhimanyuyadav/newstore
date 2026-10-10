@@ -10,7 +10,7 @@ import { Product } from "@/lib/types";
 export default function ProductCard({ product, disabled }: { product: Product; disabled?: boolean }) {
   const [wishlist, setWishlist] = useState<string[]>([]);
   const [failed, setFailed] = useState(false);
-  useEffect(() => { const load = () => setWishlist(getWishlist()); load(); window.addEventListener(DATA_CHANGED_EVENT, load); return () => window.removeEventListener(DATA_CHANGED_EVENT, load); }, []);
+  useEffect(() => { const load = () => { const next = getWishlist(); setWishlist(current => current.length === next.length && current.every((id, index) => id === next[index]) ? current : next); }; load(); window.addEventListener(DATA_CHANGED_EVENT, load); return () => window.removeEventListener(DATA_CHANGED_EVENT, load); }, []);
   useEffect(() => setFailed(false), [product.image]);
   const category = usePublicCatalog().categories.find(c => c.id === product.category);
   const unavailable = disabled || category?.enabled === false;

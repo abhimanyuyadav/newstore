@@ -3,6 +3,7 @@ import { createContext, useContext, useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { DATA_CHANGED_EVENT, defaultSiteSettings, getProducts, getCategories, getSiteSettings, getReviews, initializeData, refreshSharedData } from "@/lib/data";
 import type { PublicCatalog } from "@/lib/public-catalog";
+import { reconcilePublicCatalog } from "@/lib/public-catalog";
 
 const CatalogContext = createContext<PublicCatalog>({ products: [], categories: [], settings: defaultSiteSettings, reviews: [] });
 export const usePublicCatalog = () => useContext(CatalogContext);
@@ -12,12 +13,12 @@ export default function DataProvider({ children, initialCatalog }: { children: R
   const [catalog, setCatalog] = useState(initialCatalog || { products: [], categories: [], settings: defaultSiteSettings, reviews: [] });
   const [ready, setReady] = useState(false);
   const [error, setError] = useState("");
-  useEffect(() => { if (initialCatalog) setCatalog(initialCatalog); }, [initialCatalog]);
+  useEffect(() => { if (initialCatalog) setCatalog(current => reconcilePublicCatalog(current, initialCatalog)); }, [initialCatalog]);
   useEffect(() => {
     let active = true;
     let initialized = false;
     let refreshing = false;
-    const load = () => { if (active && initialized) setCatalog({ products: getProducts(), categories: getCategories(), settings: getSiteSettings(), reviews: getReviews().filter(review => review.status === "approved") }); };
+    const load = () => { if (active && initialized) setCatalog(current => reconcilePublicCatalog(current, { products: getProducts(), categories: getCategories(), settings: getSiteSettings(), reviews: getReviews().filter(review => review.status === "approved") })); };
     const refresh = async () => {
       if (!initialized || refreshing || document.visibilityState === "hidden") return;
       refreshing = true;
