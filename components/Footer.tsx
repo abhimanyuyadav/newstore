@@ -1,11 +1,11 @@
 "use client";
+import { usePublicCatalog } from "@/components/DataProvider";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
 import { DATA_CHANGED_EVENT, getSiteSettings, defaultSiteSettings, buildWhatsappLink } from "@/lib/data";
 export default function Footer() {
-  const [settings, setSettings] = useState(defaultSiteSettings);
-  useEffect(() => { const load = () => setSettings(getSiteSettings()); load(); window.addEventListener(DATA_CHANGED_EVENT, load); return () => window.removeEventListener(DATA_CHANGED_EVENT, load); }, []);
+  const { settings } = usePublicCatalog();
   const support = buildWhatsappLink(settings.whatsappNumber, `Hi, I need help with an order from ${settings.siteName}.`);
   return <footer className="store-footer"><div className="store-shell">
     <div className="footer-grid"><div className="footer-brand"><Link href="/" className="store-wordmark">{settings.siteName.startsWith("9") ? <><span className="brand-nine">9</span>{settings.siteName.slice(1)}</> : settings.siteName}</Link><p>{settings.tagline}</p><span>{settings.footerContactLocation}</span></div>

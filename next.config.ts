@@ -4,6 +4,8 @@ const clerkOrigin = /^[a-z0-9.-]+$/i.test(clerkHost) ? "https://" + clerkHost : 
 const clerkSources = process.env.NEXT_PUBLIC_AUTH_PROVIDER === "clerk" ? " " + clerkOrigin + " https://challenges.cloudflare.com" : "";
 const nextConfig: NextConfig = {
   output: "standalone",
+  // Resolve product existence and metadata before streaming an HTTP response.
+  htmlLimitedBots: /.*/,
   images: {
     remotePatterns: [
       ...(process.env.CONVEX_URL ? [{ protocol: "https" as const, hostname: new URL(process.env.CONVEX_URL).hostname, pathname: "/api/storage/**" }] : []),

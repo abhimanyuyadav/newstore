@@ -1,11 +1,14 @@
 "use client";
 import { ClerkProvider, SignIn, useAuth, useClerk, useUser } from "@clerk/nextjs";
 import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 import { clerkEnabled } from "@/lib/clerk-policy";
 
 function SessionReady({ children }: { children: React.ReactNode }) {
   const { isLoaded, userId } = useAuth();
-  if (!isLoaded) return <div className="min-h-screen grid place-items-center" role="status">Loading secure sign-in…</div>;
+  const pathname = usePathname();
+  const publicPage = ["/", "/products", "/about", "/lookbook"].includes(pathname) || /^\/product\/[^/]+$/.test(pathname);
+  if (!isLoaded && !publicPage) return <div className="min-h-screen grid place-items-center" role="status">Loading secure sign-in…</div>;
   return <div key={userId || "guest"}>{children}</div>;
 }
 export function AuthenticationProvider({ children }: { children: React.ReactNode }) {

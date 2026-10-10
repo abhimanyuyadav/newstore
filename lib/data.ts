@@ -160,11 +160,11 @@ export const defaultSiteSettings: SiteSettings = {
 };
 
 
-export function getProducts(): Product[] { return cached("9teen_products", defaultProducts); }
-export function getCategories(): Category[] { return cached("9teen_categories", categories); }
+export function getProducts(): Product[] { return cached("9teen_products", []); }
+export function getCategories(): Category[] { return cached("9teen_categories", []); }
 export function getSiteSettings(): SiteSettings { return { ...defaultSiteSettings, ...cached<Partial<SiteSettings>>("9teen_site_settings", {}) }; }
 export function getCoupons(): Coupon[] { return cached("9teen_coupons", defaultCoupons); }
-export function getReviews(): Review[] { return cached("9teen_reviews", defaultReviews); }
+export function getReviews(): Review[] { return cached("9teen_reviews", []); }
 export function getUserAccounts(): UserAccount[] { return cached("9teen_user_accounts", []); }
 export function getOrders(): Order[] { return cached("9teen_orders", []); }
 export function getCurrentUser(): UserAccount | null { return cached("9teen_user_session", null); }

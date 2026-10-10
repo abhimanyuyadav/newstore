@@ -1,4 +1,5 @@
 "use client";
+import { usePublicCatalog } from "@/components/DataProvider";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
@@ -8,13 +9,13 @@ import { DATA_CHANGED_EVENT, getSiteSettings, defaultSiteSettings, getCurrentUse
 export default function Navbar() {
   const router = useRouter();
   const pathname = usePathname();
-  const [settings, setSettings] = useState(defaultSiteSettings);
-  const [user, setUser] = useState(getCurrentUser());
+  const { settings } = usePublicCatalog();
+  const [user, setUser] = useState<ReturnType<typeof getCurrentUser>>(null);
   const { count } = useCart();
   const [open, setOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [q, setQ] = useState("");
-  useEffect(() => { const load = () => { setSettings(getSiteSettings()); setUser(getCurrentUser()); }; load(); window.addEventListener(DATA_CHANGED_EVENT, load); return () => window.removeEventListener(DATA_CHANGED_EVENT, load); }, []);
+  useEffect(() => { const load = () => { setUser(getCurrentUser()); }; load(); window.addEventListener(DATA_CHANGED_EVENT, load); return () => window.removeEventListener(DATA_CHANGED_EVENT, load); }, []);
   useEffect(() => { const close = (e: KeyboardEvent) => { if (e.key === "Escape") { setOpen(false); setSearchOpen(false); } }; window.addEventListener("keydown", close); return () => window.removeEventListener("keydown", close); }, []);
   const links = [{href:"/",label:"Home"},{href:"/products",label:settings.navLabelShop},{href:"/#categories",label:settings.navLabelCategories},{href:"/products?collection=sale",label:"Deals"},{href:"/products?collection=newArrivals",label:"New Arrivals"},{href:"/lookbook",label:"Lookbook"}];
   return <><header className="store-header">
