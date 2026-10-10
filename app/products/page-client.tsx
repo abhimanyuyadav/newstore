@@ -33,7 +33,7 @@ function ProductsPageContent() {
   },[products,categories,category,search,size,color,stock,price,sort,collection]);
   const clear = () => {setCategory("all");setSearch("");setSize("");setColor("");setStock(false);setPrice("all");if (params.toString()) router.replace("/products", { scroll: false });};
   return <div className="storefront"><Navbar /><main>
-    <div className="catalog-header"><div className="store-shell"><h1>{collection ? "The collection" : "Shop"}</h1><p>Discover the latest collection and find your perfect fit.</p>{collection && <Link href="/products" className="text-link mt-3">View all collections →</Link>}</div></div>
+    <div className="catalog-header"><div className="store-shell"><h1>{collection ? "The collection" : "Shop clothing in Nepal"}</h1><p>Explore 9TEEN Collection online. Compare prices in NPR, check available sizes and find your next favourite.</p>{collection && <Link href="/products" className="text-link mt-3">View all collections →</Link>}</div></div>
     <div className="store-shell catalog-layout">
       <button className="mobile-filter-toggle" aria-expanded={filtersOpen} aria-controls="catalog-filters" onClick={()=>setFiltersOpen(!filtersOpen)}>{filtersOpen ? "Hide filters" : "Filter products"}</button>
       <aside id="catalog-filters" className={`catalog-sidebar ${filtersOpen ? "is-open" : ""}`} aria-label="Product filters">

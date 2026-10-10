@@ -7,6 +7,29 @@ application uses it for origin checks and payment return URLs.
 
 ## Implementation
 
+### Nepal search audience
+
+The owner confirmed Nepal as the target market. Public titles, descriptions and
+visible copy now describe online clothing shopping in Nepal; the document language
+is `en-NP` and Open Graph locale is `en_NP` (the content remains English).
+
+| Search intent | Destination |
+| --- | --- |
+| 9TEEN Collection Nepal; online clothing shopping in Nepal | Homepage |
+| Shop clothing online in Nepal; clothing prices in NPR | Product catalog |
+| Product name + in Nepal; product name + online Nepal | The actual product page |
+| Kurtis online in Nepal; orange kurti in Nepal | Existing kurti product, linked from the homepage only while a kurti is available |
+| Fashion lookbook Nepal; about 9TEEN Collection Nepal | Lookbook and about pages |
+
+These are relevance targets, not measured search volumes or ranking guarantees.
+Product prices and descriptions remain tied to the catalog. No fabricated fabric,
+shipping, location, review, or discount claims are added. Do not add keyword lists,
+hidden text, unsupported city pages, or meta-keywords tags. Google does not use the
+meta-keywords tag for ranking. Expand category content when there is a real range
+of products to support it.
+
+### Technical setup
+
 - The root layout uses Next.js metadata and `verification.google` from
   `GOOGLE_SITE_VERIFICATION`. Keep the real token in Vercel environment variables;
   never commit it or use a placeholder value.

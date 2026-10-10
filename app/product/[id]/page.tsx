@@ -12,7 +12,12 @@ async function productFor(params: Props["params"]) {
 }
 export async function generateMetadata({ params }: Props) {
   const { product } = await productFor(params);
-  return pageMetadata(product.name, product.description || `Explore ${product.name} at 9TEEN. View available options and current availability.`, `/product/${encodeURIComponent(product.id)}`, product.image || undefined);
+  const name = product.name.trim();
+  const price = product.price > 0 ? ` Price: NPR ${new Intl.NumberFormat("en-NP").format(product.price)}.` : "";
+  const details = product.description.trim() || "View available sizes and current availability at 9TEEN Collection.";
+  const description = `Shop ${name} online in Nepal.${price} ${details}`;
+  const snippet = description.length > 180 ? `${description.slice(0, 177).replace(/\s+\S*$/, "")}…` : description;
+  return pageMetadata(`${name} in Nepal`, snippet, `/product/${encodeURIComponent(product.id)}`, product.image || undefined);
 }
 export default async function Page({ params }: Props) {
   const { product, catalog } = await productFor(params);

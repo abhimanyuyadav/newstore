@@ -1,4 +1,4 @@
 import PageClient from "./page-client";
 import { pageMetadata } from "@/lib/seo";
-export const metadata = pageMetadata('Our Story', 'Get to know 9TEEN and our approach to bold, comfortable everyday style. Explore the collection and find your next favourite.', '/about');
+export const metadata = pageMetadata('About 9TEEN Collection Nepal', 'Get to know 9TEEN Collection, an online clothing store for shoppers in Nepal. Explore current styles, product details and prices in Nepalese rupees.', '/about');
 export default function Page() { return <PageClient />; }

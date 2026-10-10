@@ -114,6 +114,7 @@ export default function ProductPage() {
                 </>
               )}
             </div>
+            <p className="text-gray-500 text-sm leading-relaxed mb-2">Shop {product.name.trim()} online in Nepal. Prices are in Nepalese rupees (NPR).</p>
             <p className="text-gray-600 text-sm leading-relaxed mb-5">{product.description}</p>
             <div className="mb-5">
               <p className="text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">Select Size</p>

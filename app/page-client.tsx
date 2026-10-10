@@ -12,6 +12,7 @@ import type { Product, Category } from "@/lib/types";
 
 export default function HomePage() {
   const { settings, categories, products } = usePublicCatalog();
+  const kurti = products.find(product => /\bkurtis?\b/i.test(product.name) && product.inStock && categories.find(category => category.id === product.category)?.enabled !== false);
   const [heroError, setHeroError] = useState(false);
   useEffect(() => setHeroError(false), [settings.heroImage]);
   const collections: Record<string, { enabled: boolean; label: string; title: string; items: Product[] }> = {
@@ -43,6 +44,6 @@ export default function HomePage() {
       return <section key={key} className="store-section"><div className="section-heading"><div><p className="eyebrow">{section.label}</p><h2>{section.title}</h2></div><Link href={key === "products" ? "/products" : `/products?collection=${key}`} className="text-link">Shop the edit<ArrowUpRight width={16} height={16} /></Link></div><div className="store-product-grid">{section.items.slice(0, 5).map(product => <ProductCard key={product.id} product={product} />)}</div></section>;
     })}</div>
     <section className="lookbook-banner"><div><p className="eyebrow">THE {settings.siteName} LOOKBOOK</p><h2>Built for your everyday.</h2><Link href="/lookbook" className="store-button">Explore Lookbook<ArrowRight width={16} height={16}/></Link></div><Image src={heroSource} alt="Explore the lookbook" width={660} height={460} sizes="(max-width: 1320px) 50vw, 660px" onError={e=>{e.currentTarget.style.visibility="hidden";}}/></section>
-    <section className="brand-statement"><p className="eyebrow">MAKE IT YOUR OWN</p><h2>{settings.tagline}</h2><Link href="/products" className="text-link">Find your next favourite<ArrowUpRight width={18} height={18} /></Link></section>
+    <section className="brand-statement"><p className="eyebrow">ONLINE CLOTHING SHOPPING IN NEPAL</p><h2>{settings.tagline}</h2><p className="max-w-xl mx-auto text-sm leading-8 text-gray-600 mb-6">Shop 9TEEN Collection online in Nepal. Browse product details, compare prices in Nepalese rupees, and choose from the sizes available for each style.</p>{kurti && <p className="max-w-xl mx-auto text-sm leading-8 text-gray-600 mb-6">Explore kurtis online in Nepal, including our <Link href={`/product/${encodeURIComponent(kurti.id)}`} className="underline">{kurti.name.trim()}</Link>. Open the product for photos, sizes and current availability.</p>}<Link href="/products" className="text-link">Shop the clothing collection<ArrowUpRight width={18} height={18} /></Link></section>
   </main><Footer /></div>;
 }

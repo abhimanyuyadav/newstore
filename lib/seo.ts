@@ -7,7 +7,7 @@ if (configured.protocol !== "https:" || configured.username || configured.passwo
 }
 export const SITE_URL = configured.origin;
 export const SITE_NAME = "9TEEN";
-export const DEFAULT_DESCRIPTION = "Explore clothing, accessories and everyday style at 9TEEN. Browse the latest collection and find your next favourite.";
+export const DEFAULT_DESCRIPTION = "Shop clothing online in Nepal with 9TEEN Collection. Explore current styles, compare prices in Nepalese rupees, and check sizes and availability.";
 export const SOCIAL_IMAGE = "/images/campaign/warm-hero.png";
 export const publicPaths = ["/", "/products", "/about", "/lookbook"];
 export function isPublicPage(path: string) {
@@ -23,7 +23,7 @@ export function pageMetadata(title: string, description: string, path: string, i
   return {
     title, description, alternates: { canonical: absoluteUrl(path) },
     robots: { index: indexingEnabled(), follow: true },
-    openGraph: { type: "website", siteName: SITE_NAME, locale: "en_US", title: fullTitle, description, url: absoluteUrl(path), images: [{ url: absoluteUrl(image), alt: title }] },
+    openGraph: { type: "website", siteName: SITE_NAME, locale: "en_NP", title: fullTitle, description, url: absoluteUrl(path), images: [{ url: absoluteUrl(image), alt: title }] },
     twitter: { card: "summary_large_image", title: fullTitle, description, images: [absoluteUrl(image)] },
   };
 }
